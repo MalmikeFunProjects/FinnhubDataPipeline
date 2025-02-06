@@ -1,5 +1,5 @@
 import pandas as pd
-from confluent_kafka import Producer
+from confluent_kafka import SerializingProducer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 from confluent_kafka.schema_registry.avro import AvroSerializer
@@ -15,7 +15,7 @@ class KafkaProducer:
     self.value_serializer = AvroSerializer(schema_registry_client, schema)
 
     producer_props = {'bootstrap.servers': props['bootstrap.servers']}
-    self.producer = Producer(producer_props)
+    self.producer = SerializingProducer(producer_props)
 
   def publishToKafka(self, topic: str, df: pd.DataFrame, key: str):
     records = df.to_dict(orient="records")
