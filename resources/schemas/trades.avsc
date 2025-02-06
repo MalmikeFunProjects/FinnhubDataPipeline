@@ -1,0 +1,39 @@
+{
+    "type": "record",
+    "name": "Trade",
+    "fields": [
+        {
+            "name": "TradeCondition",
+            "type": {
+                "type": "array",
+                "items": [
+                    "string",
+                    "null"
+                ],
+                "default": [],
+                "doc": "List of trade conditions"
+            }
+        },
+        {
+            "name": "Price",
+            "type": "double",
+            "doc": "Last price"
+        },
+        {
+            "name": "Symbol",
+            "type": "string",
+            "doc": "Symbol"
+        },
+        {
+            "name": "Timestamp",
+            "type": "long",
+            "doc": "UNIX milliseconds timestamp"
+        },
+        {
+            "name": "Volume",
+            "type": "double",
+            "doc": "Volume"
+        }
+    ],
+    "doc": "Schema for list of trades or price updates"
+}
