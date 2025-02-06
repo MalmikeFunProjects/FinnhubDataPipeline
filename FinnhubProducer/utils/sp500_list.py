@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 
-from settings import SP500_COMPANIES_URL, SP500_COMPANY_PROFILES_FILE_PATH, US_BIG_TECH_URL
+from utils.settings import SP500_COMPANIES_URL, SP500_COMPANY_PROFILES_FILE_PATH, US_BIG_TECH_URL
 sp500_company_profiles_file_path="resources/sp500_company_profiles.csv"
 
 class SP500_list:

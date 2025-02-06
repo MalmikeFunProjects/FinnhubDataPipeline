@@ -4,7 +4,7 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-from utilities import Utilities
+from utils.utilities import Utilities
 
 class KafkaProducer:
   def __init__(self, props: dict):

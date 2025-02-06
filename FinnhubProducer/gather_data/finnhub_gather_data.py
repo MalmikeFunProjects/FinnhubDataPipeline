@@ -1,5 +1,5 @@
 import pandas as pd
-from finnhub_sp500 import FinnhubSP500
+from .finnhub_sp500 import FinnhubSP500
 
 class FinnhubGatherData:
   def __init__(self):

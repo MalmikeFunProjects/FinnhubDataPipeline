@@ -1,7 +1,7 @@
-from finnhub_gather_data import FinnhubGatherData
-from finnhub_trades import FinnhubTrades
-from kafka_producer import KafkaProducer
-from settings import BOOTSTRAP_SERVERS, KAFKA_TOPIC_COMPANY_PROFILES, SCHEMA_REGISTRY_URL, SCHEMA_SP500_COMPANY_PROFILES, SCHEMA_TRADES
+from gather_data.finnhub_gather_data import FinnhubGatherData
+from gather_data.finnhub_trades import FinnhubTrades
+from handlers.kafka_producer import KafkaProducer
+from utils.settings import BOOTSTRAP_SERVERS, KAFKA_TOPIC_COMPANY_PROFILES, SCHEMA_REGISTRY_URL, SCHEMA_SP500_COMPANY_PROFILES, SCHEMA_TRADES
 
 class FinnhubProducer:
   def __init__(self):

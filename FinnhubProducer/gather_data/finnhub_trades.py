@@ -1,11 +1,11 @@
 import json
 import pandas as pd
-from kafka_producer import KafkaProducer
-from settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
+from handlers.kafka_producer import KafkaProducer
+from utils.settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
 import websocket
 import traceback
 
-from utilities import Utilities
+from utils.utilities import Utilities
 
 
 class FinnhubTrades:

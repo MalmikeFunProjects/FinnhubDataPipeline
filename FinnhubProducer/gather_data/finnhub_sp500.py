@@ -3,9 +3,9 @@ import pandas as pd
 import time
 import finnhub
 import asyncio
-from settings import FINNHUB_API_KEY, SP500_COMPANY_PROFILES_FILE_PATH
-from sp500_list import SP500_list
-from utilities import Utilities
+from utils.settings import FINNHUB_API_KEY, SP500_COMPANY_PROFILES_FILE_PATH
+from utils.sp500_list import SP500_list
+from utils.utilities import Utilities
 
 class FinnhubSP500:
   def __init__(self):
