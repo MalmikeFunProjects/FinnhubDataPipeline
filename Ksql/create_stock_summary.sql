@@ -1,0 +1,152 @@
+SET 'auto.offset.reset'='earliest';
+
+CREATE STREAM stock_prices
+(
+    price DOUBLE,
+    symbol VARCHAR,
+    timestamp BIGINT
+)
+WITH
+(
+    KAFKA_TOPIC='finnhub_trades',
+    VALUE_FORMAT='AVRO',  -- Or AVRO, depending on your data
+    TIMESTAMP='timestamp'
+);
+
+-- CREATE STREAM TICKERS_STREAM (
+--     symbol VARCHAR,
+--     timestamp BIGINT
+-- ) WITH (
+--     KAFKA_TOPIC = 'finnhub_company_symbols',
+--     VALUE_FORMAT = 'AVRO',
+--     TIMESTAMP = 'timestamp'
+-- );
+
+-- CREATE TABLE TICKERS AS
+-- SELECT
+--     SYMBOL,
+--     timestamp
+-- FROM TICKERS_STREAM
+-- GROUP BY SYMBOL, timestamp;
+
+-- CREATE TABLE MAX_TIMESTAMP_TABLE AS
+-- SELECT SYMBOL, MAX(TIMESTAMP) AS MAX_TIMESTAMP
+-- FROM TICKERS_STREAM
+-- WINDOW TUMBLING (SIZE 1 HOUR)
+-- GROUP BY SYMBOL
+-- EMIT CHANGES;
+
+-- CREATE STREAM LATEST_SYMBOLS (
+--     MAX_TIMESTAMP bigint key,
+--     symbol VARCHAR
+-- ) WITH (
+--     KAFKA_TOPIC = 'MAX_TIMESTAMP_TABLE',
+--     VALUE_FORMAT = 'JSON',
+--     WINDOW_TYPE = 'TUMBLING',
+--     WINDOW_SIZE = '1 HOUR'
+-- );
+
+-- SELECT
+--     sp.price,
+--     sp.symbol,
+--     sp.timestamp,
+--     s.symbol as s2
+-- FROM stock_prices sp
+-- JOIN MAX_TIMESTAMP_TABLE s ON sp.symbol = s.symbol;
+
+
+
+-- SELECT SYMBOL FROM TICKERS;
+
+-- SELECT *
+-- FROM TICKERS
+-- LATERAL VIEW OUTER
+-- EXPLODE(SYMBOLS) AS SYMBOL;
+
+CREATE TABLE STOCK_PRICES_1S AS
+SELECT
+    SYMBOL,
+    WINDOWSTART AS TIMESTAMP,
+    COUNT(*) AS COUNT,
+    AVG(PRICE) AS AVG_PRICE
+FROM STOCK_PRICES
+WINDOW TUMBLING (SIZE 1 SECONDS)
+GROUP BY SYMBOL
+EMIT FINAL;
+
+-- CREATE TABLE TICKERS_TABLE AS
+-- SELECT
+--   TIMESTAMP,
+--   WINDOWSTART AS window_start,  -- Start of the tumbling window
+--   LATEST_BY_OFFSET(SYMBOLS) AS latest_symbols
+-- FROM TICKERS_STREAM
+-- WINDOW TUMBLING (SIZE 1 HOURS)
+-- GROUP BY TIMESTAMP
+-- EMIT CHANGES;
+
+-- SELECT * FROM STOCK_PRICES_1S EMIT CHANGES;
+
+-- DROP TABLE STOCK_PRICES_1S;
+
+CREATE STREAM STOCK_PRICES_1S_STREAM (
+    SYMBOL VARCHAR KEY,  -- Explicitly declare SYMBOL as the key
+    AVG_PRICE DOUBLE,
+    TIMESTAMP BIGINT
+) WITH (
+    KAFKA_TOPIC = 'STOCK_PRICES_1S',
+    VALUE_FORMAT = 'AVRO',
+    WINDOW_TYPE = 'TUMBLING',
+    WINDOW_SIZE = '1 SECONDS'
+);
+
+-- SELECT * FROM STOCK_PRICES_1S_STREAM EMIT CHANGES;
+
+-- DROP STREAM STOCK_PRICES_1S_STREAM;
+
+
+CREATE TABLE STOCK_SUMMARY AS
+SELECT
+    TIMESTAMP,
+    SUM(avg_price) AS total_avg_price,
+    COLLECT_LIST(SYMBOL) AS symbols
+FROM stock_prices_1s_stream
+WINDOW TUMBLING (SIZE 1 SECONDS)
+GROUP BY TIMESTAMP
+EMIT CHANGES;
+
+
+CREATE STREAM STOCK_SUMMARY_STREAM (
+    TIMESTAMP BIGINT KEY,
+    total_avg_price DOUBLE,
+    SYMBOLS ARRAY<VARCHAR(STRING)>
+) WITH (
+    KAFKA_TOPIC = 'STOCK_SUMMARY',
+    VALUE_FORMAT = 'AVRO',
+    WINDOW_TYPE = 'TUMBLING',
+    WINDOW_SIZE = '1 SECONDS'
+);
+
+
+-- CREATE TABLE LATEST_PRICES AS
+-- SELECT
+--     SYMBOL,
+--     LATEST_BY_OFFSET(price) AS LAST_PRICE
+-- FROM stock_prices
+-- GROUP BY SYMBOL;
+
+
+-- SELECT *
+-- FROM symbols EMIT
+-- CHANGES LIMIT 1
+
+
+-- -- TESTING VARIOUS CONCEPTS
+-- CREATE TABLE latest_prices AS
+-- SELECT
+--     symbol,
+--     LATEST_BY_OFFSET(price) AS last_price,
+--     LATEST_BY_OFFSET(timestamp) AS last_timestamp
+-- FROM stock_prices
+-- GROUP BY symbol;
+
+select * from STOCK_SUMMARY_STREAM emit changes
