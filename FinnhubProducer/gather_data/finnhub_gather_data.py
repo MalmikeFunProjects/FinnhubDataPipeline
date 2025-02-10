@@ -13,9 +13,3 @@ class FinnhubGatherData:
   def get_us_big_tech_tickers(self, sp500_company_profiles: pd.DataFrame) -> pd.Series:
     us_big_tech_list = sp500_company_profiles[sp500_company_profiles["Name"].str.contains(self.us_big_tech_str_list, case=False, na=False)]
     return us_big_tech_list["Ticker"]
-
-# if __name__ == "__main__":
-#   finnhub_gather_data = FinnhubGatherData()
-#   company_profiles = finnhub_gather_data.get_company_profiles()
-#   print(company_profiles.columns)
-

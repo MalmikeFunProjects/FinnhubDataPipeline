@@ -1,4 +1,5 @@
 import json
+from numpy import ndarray
 import pandas as pd
 from handlers.kafka_producer import KafkaProducer
 from utils.settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
@@ -10,7 +11,7 @@ from utils.utilities import Utilities
 
 class FinnhubTrades:
   def __init__(self,
-               tickers: pd.Series,
+               tickers: ndarray,
                producer: KafkaProducer,
                max_messages: int = None):
     self.tickers = tickers
@@ -29,19 +30,23 @@ class FinnhubTrades:
 
   def on_message(self, ws: websocket.WebSocketApp, message):
     try:
-      data = json.loads(message)
-      df = pd.DataFrame(data["data"])
-      Utilities.rename_df_columns(df, self.column_map)
-      self.producer.publishToKafka(topic=KAFKA_TOPIC_TRADES,
-                            df=df,
-                            key=self.key_name)
-      self.message_count += 1
+      data = dict(json.loads(message))
+      if(data["type"] == "ping"):
+        print(f"Connection failed. Returning {data["type"]}.")
+      else:
+        df = pd.DataFrame(data["data"])
+        Utilities.rename_df_columns(df, self.column_map)
+        self.producer.publishUsingDataFrames(topic=KAFKA_TOPIC_TRADES,
+                              df=df,
+                              key=self.key_name)
+
       if(self.max_messages and self.message_count >= self.max_messages):
         print(f"Recieved {self.max_messages} messages. Closing connection")
         ws.close()
     except json.JSONDecodeError as e:
       print(f"Error decoding JSON: {e}")
     except KeyError as e:
+      traceback.print_exc()
       print(f"Missing expected key: {e}")
 
   def on_error(self, ws, error):
@@ -55,6 +60,7 @@ class FinnhubTrades:
   def on_open(self, ws):
     for ticker in self.tickers:
       ws.send(f'{{"type":"subscribe", "symbol":"{ticker}"}}')
+
 
   def start_websocket(self):
     if(self.tickers is None):
