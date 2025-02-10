@@ -62,9 +62,9 @@ class ExecuteKsql:
 
 
 class StorageType(Enum):
-    STREAMS = "streams"
-    TABLES = "tables"
-    TOPICS = "topics"
+    STREAM = "streams"
+    TABLE = "tables"
+    TOPIC = "topics"
 
 
 class MakeKsqlRequest:
@@ -124,118 +124,145 @@ class KsqlSpecificRequest:
             statement=statement, request_type="ksql")
         print(response)
 
-    def createStockPricesStream(self):
-        stream_name = "STOCK_PRICES"
-        column_defs = ["price DOUBLE", "symbol VARCHAR", "timestamp BIGINT"]
-        kafka_topic = UTILS.KAFKA_TOPIC_TRADES
-        value_format = "AVRO"
+    def __createStreamFromTopic(self, props):
         check = self.makeKsqlRequest.check_storage_type_exists(
-            StorageType.STREAMS, stream_name)
+            StorageType.STREAM, props["stream_name"])
         if (not check):
             response = self.makeKsqlRequest.create_stream(
-                stream_name=stream_name,
-                kafka_topic=kafka_topic,
-                value_format=value_format,
-                column_defs=column_defs,
+                stream_name=props["stream_name"],
+                kafka_topic=props["kafka_topic"],
+                value_format=props["value_format"],
+                column_defs=props["column_defs"],
                 partitions=self.partitions
             )
             print(response)
         else:
-            print(f"Stream {stream_name} already exists")
+            print(f"Stream {props["stream_name"]} already exists")
 
-    def tableStockPrices1sAvg(self):
-        table_name = "STOCK_PRICES_1S"
+    def __execute_statement(self, storageType: StorageType, storageName: str, statement: str):
         check = self.makeKsqlRequest.check_storage_type_exists(
-            StorageType.TABLES, table_name)
-        if (not check):
-            statement = f"""
-              CREATE TABLE {table_name} AS
-              SELECT
-                  symbol,
-                  WINDOWSTART AS TIMESTAMP,
-                  COUNT(*) AS COUNT,
-                  AVG(PRICE) AS AVG_PRICE
-              FROM STOCK_PRICES
-              WINDOW TUMBLING (SIZE 1 SECONDS)
-              GROUP BY SYMBOL
-              EMIT FINAL;
-            """
+            storage_type=storageType, name=storageName)
+        if(not check):
             response = self.makeKsqlRequest.handle_request(
                 statement=statement, request_type="ksql")
             print(response)
         else:
-            print(f"Table {table_name} already exists")
+            print(f"{storageType.name.capitalize()} {storageName} already exists")
+
+    def createStockPricesStream(self):
+        props = {
+            "stream_name": "STOCK_PRICES",
+            "column_defs": ["price DOUBLE", "symbol VARCHAR", "timestamp BIGINT"],
+            "kafka_topic": UTILS.KAFKA_TOPIC_TRADES,
+            "value_format": "AVRO",
+        }
+        self.__createStreamFromTopic(props)
+
+    def createSymbolsStream(self):
+        props = {
+            "stream_name": "SYMBOLS",
+            "column_defs": ["SYMBOL VARCHAR", "TIMESTAMP BIGINT"],
+            "kafka_topic": UTILS.KAFKA_TOPIC_SYMBOLS,
+            "value_format": "AVRO",
+        }
+        self.__createStreamFromTopic(props)
+
+    def tableCompanySymbols(self):
+        table_name = "COMPANY_SYMBOLS"
+        statement = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                SYMBOL,
+                LATEST_BY_OFFSET(TIMESTAMP) AS TIMESTAMP
+            FROM SYMBOLS
+            GROUP BY SYMBOL
+            EMIT CHANGES;
+        """
+        self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
+
+    def tableLatestPrices(self):
+        table_name = "LATEST_PRICES"
+        statement = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                sp.SYMBOL as SYMBOL,
+                COALESCE(LATEST_BY_OFFSET(sp.price), CAST(0 AS DOUBLE)) AS LAST_PRICE,
+                LATEST_BY_OFFSET(sp.TIMESTAMP) AS TIMESTAMP
+            FROM STOCK_PRICES sp
+              LEFT JOIN COMPANY_SYMBOLS cs
+              ON sp.SYMBOL = cs.SYMBOL
+            GROUP BY sp.SYMBOL
+            EMIT CHANGES;
+        """
+        self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
+
+    def tableStockPrices1sAvg(self):
+        table_name = "STOCK_PRICES_1S"
+        statement = f"""
+              CREATE TABLE {table_name} AS
+              SELECT
+                  sp.SYMBOL as SYMBOL,
+                  COUNT(*) AS COUNT,
+                  AVG(COALESCE(sp.PRICE, ls.LAST_PRICE)) as PRICE,
+                  MAX(sp.ROWTIME) as TIMESTAMP
+              FROM STOCK_PRICES sp
+                  LEFT JOIN LATEST_PRICES ls
+                  ON sp.SYMBOL = ls.SYMBOL
+              WINDOW TUMBLING(SIZE 1 SECONDS)
+              GROUP BY sp.SYMBOL
+              EMIT FINAL;
+            """
+        self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
 
     def streamStockPrices1sAvg(self):
         stream_name = "STOCK_PRICES_1S_STREAM"
         topic_name = "STOCK_PRICES_1S"
-        check = self.makeKsqlRequest.check_storage_type_exists(
-            StorageType.STREAMS, stream_name)
-        if (not check):
-            statement = f"""
-              CREATE STREAM {stream_name} (
-                  SYMBOL VARCHAR KEY,
-                  AVG_PRICE DOUBLE,
-                  TIMESTAMP BIGINT
-              ) WITH (
-                  KAFKA_TOPIC = '{topic_name}',
-                  VALUE_FORMAT = 'AVRO',
-                  WINDOW_TYPE = 'TUMBLING',
-                  WINDOW_SIZE = '1 SECONDS'
-              );
-            """
-            response = self.makeKsqlRequest.handle_request(
-                statement=statement, request_type="ksql")
-            print(response)
-        else:
-            print(f"Stream {stream_name} already exists")
+        statement = f"""
+          CREATE STREAM {stream_name} (
+              SYMBOL VARCHAR KEY,
+              PRICE DOUBLE,
+              TIMESTAMP BIGINT
+          ) WITH (
+              KAFKA_TOPIC = '{topic_name}',
+              VALUE_FORMAT = 'AVRO',
+              WINDOW_TYPE = 'TUMBLING',
+              WINDOW_SIZE = '1 SECONDS'
+          );
+        """
+        self.__execute_statement(storageType=StorageType.STREAM, storageName=stream_name, statement=statement)
 
     def tableStockSummary(self):
         table_name = "STOCK_SUMMARY"
         stream_name = "STOCK_PRICES_1S_STREAM"
-        check = self.makeKsqlRequest.check_storage_type_exists(
-            StorageType.TABLES, table_name)
-        if (not check):
-            statement = f"""
-                CREATE TABLE {table_name} AS
-                SELECT
-                    TIMESTAMP,
-                    SUM(avg_price) AS total_avg_price,
-                    COLLECT_LIST(SYMBOL) AS symbols
-                FROM {stream_name}
-                WINDOW TUMBLING (SIZE 1 SECONDS)
-                GROUP BY TIMESTAMP
-                EMIT CHANGES;
-            """
-            self.makeKsqlRequest.handle_request(
-                statement=statement, request_type="ksql")
-        else:
-            print(f"Table {table_name} already exists")
+        statement = f"""
+            CREATE TABLE {table_name} AS
+            SELECT
+                TIMESTAMP,
+                SUM(PRICE) AS TOTAL_PRICE,
+                COLLECT_LIST(SYMBOL) AS symbols
+            FROM {stream_name}
+            WINDOW TUMBLING (SIZE 1 SECONDS)
+            GROUP BY TIMESTAMP
+            EMIT FINAL;
+        """
+        self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
 
     def streamStockSummary(self):
         stream_name = "STOCK_SUMMARY_STREAM"
         topic_name = "STOCK_SUMMARY"
-        check = self.makeKsqlRequest.check_storage_type_exists(
-            StorageType.STREAMS, stream_name)
-        if (not check):
-            statement = f"""
-              CREATE STREAM {stream_name} (
-                  TIMESTAMP BIGINT KEY,
-                  total_avg_price DOUBLE,
-                  SYMBOLS ARRAY<VARCHAR(STRING)>
-              ) WITH (
-                  KAFKA_TOPIC = '{topic_name}',
-                  VALUE_FORMAT = 'AVRO',
-                  WINDOW_TYPE = 'TUMBLING',
-                  WINDOW_SIZE = '1 SECONDS'
-              );
-            """
-            response = self.makeKsqlRequest.handle_request(
-                statement=statement, request_type="ksql")
-            print(response)
-        else:
-            print(f"Stream {stream_name} already exists")
-
+        statement = f"""
+          CREATE STREAM {stream_name} (
+              TIMESTAMP BIGINT KEY,
+              TOTAL_PRICE DOUBLE,
+              SYMBOLS ARRAY<VARCHAR(STRING)>
+          ) WITH (
+              KAFKA_TOPIC = '{topic_name}',
+              VALUE_FORMAT = 'AVRO',
+              WINDOW_TYPE = 'TUMBLING',
+              WINDOW_SIZE = '1 SECONDS'
+          );
+        """
+        self.__execute_statement(storageType=StorageType.STREAM, storageName=stream_name, statement=statement)
 
 if __name__ == "__main__":
     make_ksql_request = MakeKsqlRequest()
@@ -251,14 +278,18 @@ if __name__ == "__main__":
     # Check that all topics exist
     for topic_name in topics:
         check = make_ksql_request.check_storage_type_exists(
-            storage_type=StorageType.TOPICS, name=topic_name)
+            storage_type=StorageType.TOPIC, name=topic_name)
         if (not check):
             print(f"Topic {topic_name} failed to create")
             exit(1)
 
     kafka_topic = UTILS.KAFKA_TOPIC_TRADES
     ksqlSpecificRequest = KsqlSpecificRequest()
+
     ksqlSpecificRequest.createStockPricesStream()
+    ksqlSpecificRequest.createSymbolsStream()
+    ksqlSpecificRequest.tableCompanySymbols()
+    ksqlSpecificRequest.tableLatestPrices()
     ksqlSpecificRequest.tableStockPrices1sAvg()
     ksqlSpecificRequest.streamStockPrices1sAvg()
     ksqlSpecificRequest.tableStockSummary()
