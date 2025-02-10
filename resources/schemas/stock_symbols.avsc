@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "SymbolList",
+  "fields": [
+    {
+      "name": "Symbol",
+      "type": "string"
+    },
+    {
+      "name": "Timestamp",
+      "type": "long"
+    }
+  ]
+}

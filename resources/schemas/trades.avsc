@@ -4,15 +4,18 @@
     "fields": [
         {
             "name": "TradeCondition",
-            "type": {
-                "type": "array",
-                "items": [
-                    "string",
-                    "null"
-                ],
-                "default": [],
-                "doc": "List of trade conditions"
-            }
+            "type": [
+                "null",
+                {
+                    "type": "array",
+                    "items": [
+                        "string",
+                        "null"
+                    ],
+                    "default": [],
+                    "doc": "List of trade conditions"
+                }
+            ]
         },
         {
             "name": "Price",

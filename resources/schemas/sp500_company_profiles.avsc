@@ -1,101 +1,65 @@
 {
-  "type": "record",
-  "name": "sp500_company_profiles",
-  "fields": [
-    {
-      "name": "Country",
-      "type": "string",
-      "altnames": {
-        "csv": "country"
-      }
-    },
-    {
-      "name": "Currency",
-      "type": "string",
-      "altnames": {
-        "csv": "currency"
-      }
-    },
-    {
-      "name": "EstimateCurrency",
-      "type": "string",
-      "altnames": {
-        "csv": "estimateCurrency"
-      }
-    },
-    {
-      "name": "Exchange",
-      "type": "string",
-      "altnames": {
-        "csv": "exchange"
-      }
-    },
-    {
-      "name": "FinnhubIndustry",
-      "type": "string",
-      "altnames": {
-        "csv": "finnhubIndustry"
-      }
-    },
-    {
-      "name": "IPO",
-      "type": "string",
-      "altnames": {
-        "csv": "ipo"
-      }
-    },
-    {
-      "name": "Logo",
-      "type": ["string", "null"],
-      "altnames": {
-        "csv": "logo"
-      }
-    },
-    {
-      "name": "MarketCapitalization",
-      "type": "double",
-      "altnames": {
-        "csv": "marketCapitalization"
-      }
-    },
-    {
-      "name": "Name",
-      "type": "string",
-      "altnames": {
-        "csv": "name"
-      }
-    },
-    {
-      "name": "Phone",
-      "type": "double",
-      "altnames": {
-        "csv": "phone"
-      }
-    },
-    {
-      "name": "ShareOutstanding",
-      "type": "double",
-      "altnames": {
-        "csv": "shareOutstanding"
-      }
-    },
-    {
-      "name": "Ticker",
-      "type": "string",
-      "altnames": {
-        "csv": "ticker"
-      }
-    },
-    {
-      "name": "Weburl",
-      "type": "string",
-      "altnames": {
-        "csv": "weburl"
-      }
-    },
-    {
-      "name": "Symbol",
-      "type": "string"
-    }
-  ]
+    "type": "record",
+    "name": "sp500_company_profiles",
+    "fields": [
+        {
+            "name": "Country",
+            "type": "string"
+        },
+        {
+            "name": "Currency",
+            "type": "string"
+        },
+        {
+            "name": "EstimateCurrency",
+            "type": "string"
+        },
+        {
+            "name": "Exchange",
+            "type": "string"
+        },
+        {
+            "name": "FinnhubIndustry",
+            "type": "string"
+        },
+        {
+            "name": "IPO",
+            "type": "string"
+        },
+        {
+            "name": "Logo",
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        {
+            "name": "MarketCapitalization",
+            "type": "double"
+        },
+        {
+            "name": "Name",
+            "type": "string"
+        },
+        {
+            "name": "Phone",
+            "type": "double"
+        },
+        {
+            "name": "ShareOutstanding",
+            "type": "double"
+        },
+        {
+            "name": "Ticker",
+            "type": "string"
+        },
+        {
+            "name": "Weburl",
+            "type": "string"
+        },
+        {
+            "name": "Symbol",
+            "type": "string"
+        }
+    ]
 }
