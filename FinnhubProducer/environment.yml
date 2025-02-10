@@ -6,7 +6,6 @@ dependencies:
   - websocket-client=1.8.0
   - finnhub-python=2.4.18
   - peewee>=3.16.2
-  - yfinance=0.2.52
   - pandas=2.2.3
   - python-confluent-kafka=2.8.0
   - httpx=0.28.1
