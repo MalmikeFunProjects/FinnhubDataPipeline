@@ -52,10 +52,6 @@ class ExecuteKsql:
         response = requests.post(
             f"{UTILS.KSQLDB_URL}/{request_type}", headers=headers, data=json.dumps(payload))
         if (response.status_code == 200):
-            # response_text = response.text.strip()
-            # json_objects = response_text.split("\n")
-            # parsed_objects = [json.loads(obj) for obj in json_objects if obj]
-            # print(parsed_objects)  # Print parsed JSON objects
             return response.json()
         else:
             raise Exception(f"Error: {response.text}")
@@ -170,7 +166,11 @@ class KsqlSpecificRequest:
     def tableCompanySymbols(self):
         table_name = "COMPANY_SYMBOLS"
         statement = f"""
-            CREATE TABLE {table_name} AS
+            CREATE TABLE {table_name} WITH (
+                KAFKA_TOPIC = '{table_name}',
+                VALUE_FORMAT = 'AVRO',
+                KEY_FORMAT = 'AVRO'
+            ) AS
             SELECT
                 SYMBOL,
                 LATEST_BY_OFFSET(TIMESTAMP) AS TIMESTAMP
@@ -183,7 +183,11 @@ class KsqlSpecificRequest:
     def tableLatestPrices(self):
         table_name = "LATEST_PRICES"
         statement = f"""
-            CREATE TABLE {table_name} AS
+            CREATE TABLE {table_name} WITH (
+                KAFKA_TOPIC = '{table_name}',
+                VALUE_FORMAT = 'AVRO',
+                KEY_FORMAT = 'AVRO'
+            ) AS
             SELECT
                 sp.SYMBOL as SYMBOL,
                 COALESCE(LATEST_BY_OFFSET(sp.price), CAST(0 AS DOUBLE)) AS LAST_PRICE,
@@ -199,19 +203,21 @@ class KsqlSpecificRequest:
     def tableStockPrices1sAvg(self):
         table_name = "STOCK_PRICES_1S"
         statement = f"""
-              CREATE TABLE {table_name} AS
-              SELECT
-                  sp.SYMBOL as SYMBOL,
-                  COUNT(*) AS COUNT,
-                  AVG(COALESCE(sp.PRICE, ls.LAST_PRICE)) as PRICE,
-                  MAX(sp.ROWTIME) as TIMESTAMP
-              FROM STOCK_PRICES sp
-                  LEFT JOIN LATEST_PRICES ls
-                  ON sp.SYMBOL = ls.SYMBOL
-              WINDOW TUMBLING(SIZE 1 SECONDS)
-              GROUP BY sp.SYMBOL
-              EMIT FINAL;
-            """
+            CREATE TABLE {table_name} WITH (
+              KAFKA_TOPIC = '{table_name}',
+              VALUE_FORMAT = 'AVRO',
+              KEY_FORMAT = 'AVRO'
+            ) AS
+            SELECT
+                SYMBOL,
+                COUNT(*) AS COUNT,
+                AVG(PRICE) as AVG_PRICE,
+                WINDOWSTART as TIMESTAMP
+            FROM STOCK_PRICES
+            WINDOW TUMBLING(SIZE 1 SECONDS)
+            GROUP BY SYMBOL
+            EMIT FINAL;
+        """
         self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
 
     def streamStockPrices1sAvg(self):
@@ -220,7 +226,7 @@ class KsqlSpecificRequest:
         statement = f"""
           CREATE STREAM {stream_name} (
               SYMBOL VARCHAR KEY,
-              PRICE DOUBLE,
+              AVG_PRICE DOUBLE,
               TIMESTAMP BIGINT
           ) WITH (
               KAFKA_TOPIC = '{topic_name}',
@@ -235,10 +241,14 @@ class KsqlSpecificRequest:
         table_name = "STOCK_SUMMARY"
         stream_name = "STOCK_PRICES_1S_STREAM"
         statement = f"""
-            CREATE TABLE {table_name} AS
+            CREATE TABLE {table_name} WITH (
+                KAFKA_TOPIC = '{table_name}',
+                VALUE_FORMAT = 'AVRO',
+                KEY_FORMAT = 'AVRO'
+            ) AS
             SELECT
                 TIMESTAMP,
-                SUM(PRICE) AS TOTAL_PRICE,
+                SUM(AVG_PRICE) AS TOTAL_PRICE,
                 COLLECT_LIST(SYMBOL) AS symbols
             FROM {stream_name}
             WINDOW TUMBLING (SIZE 1 SECONDS)
@@ -247,22 +257,6 @@ class KsqlSpecificRequest:
         """
         self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
 
-    def streamStockSummary(self):
-        stream_name = "STOCK_SUMMARY_STREAM"
-        topic_name = "STOCK_SUMMARY"
-        statement = f"""
-          CREATE STREAM {stream_name} (
-              TIMESTAMP BIGINT KEY,
-              TOTAL_PRICE DOUBLE,
-              SYMBOLS ARRAY<VARCHAR(STRING)>
-          ) WITH (
-              KAFKA_TOPIC = '{topic_name}',
-              VALUE_FORMAT = 'AVRO',
-              WINDOW_TYPE = 'TUMBLING',
-              WINDOW_SIZE = '1 SECONDS'
-          );
-        """
-        self.__execute_statement(storageType=StorageType.STREAM, storageName=stream_name, statement=statement)
 
 if __name__ == "__main__":
     make_ksql_request = MakeKsqlRequest()
@@ -293,4 +287,3 @@ if __name__ == "__main__":
     ksqlSpecificRequest.tableStockPrices1sAvg()
     ksqlSpecificRequest.streamStockPrices1sAvg()
     ksqlSpecificRequest.tableStockSummary()
-    ksqlSpecificRequest.streamStockSummary()

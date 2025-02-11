@@ -11,8 +11,8 @@ class FinnhubProducer:
   def __init__(self):
     self.finnhub_gather_data = FinnhubGatherData()
     self.company_profiles = self.finnhub_gather_data.get_company_profiles()
-    self.tickers = self.finnhub_gather_data.get_us_big_tech_tickers(self.company_profiles).unique()
-    # self.tickers = np.array(UTILS.TEST_TICKERS) # These symbols seem to work even when other symbols are failing
+    # self.tickers = self.finnhub_gather_data.get_us_big_tech_tickers(self.company_profiles).unique()
+    self.tickers = np.array(UTILS.TEST_TICKERS) # These symbols seem to work even when other symbols are failing
 
   def publishSP500CompanyProfiles(self):
     config = {
@@ -50,6 +50,6 @@ class FinnhubProducer:
 
 if __name__ == "__main__":
   finnhubProducer = FinnhubProducer()
-  finnhubProducer.publishSP500CompanyProfiles()
+  # finnhubProducer.publishSP500CompanyProfiles()
   finnhubProducer.publishStockSymbols()
   finnhubProducer.publishTrades()
