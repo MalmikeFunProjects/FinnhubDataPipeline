@@ -1,0 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+SCHEMA_REGISTRY_URL = os.getenv("SCHEMA_REGISTRY_URL")
+BOOTSTRAP_SERVERS = os.getenv("BOOTSTRAP_SERVERS")
+KAFKA_TOPIC_LATEST_PRICES = os.getenv("KAFKA_TOPIC_LATEST_PRICES")
+KAFKA_TOPIC_STOCK_SUMMARY = os.getenv("KAFKA_TOPIC_STOCK_SUMMARY")
+

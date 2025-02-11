@@ -1,0 +1,9 @@
+name: finnhubDPL
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python-confluent-kafka=2.8.0
+  - httpx=0.28.1
+  - fastavro=1.10.0
+  - python-dotenv=1.0.1
