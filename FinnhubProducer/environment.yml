@@ -5,9 +5,12 @@ channels:
 dependencies:
   - websocket-client=1.8.0
   - finnhub-python=2.4.18
-  - peewee>=3.16.2
   - pandas=2.2.3
   - python-confluent-kafka=2.8.0
   - httpx=0.28.1
   - fastavro=1.10.0
   - python-dotenv=1.0.1
+  - requests=2.32.3
+  - attrs=25.1.0
+  - cachetools=5.5.1
+  - lxml=5.3.1

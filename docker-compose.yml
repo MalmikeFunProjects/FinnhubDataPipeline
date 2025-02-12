@@ -1,7 +1,7 @@
 networks:
-  default:
-    name: finnhub-network
-    external: true
+  finnhub-network:
+    driver: bridge
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -10,12 +10,15 @@ services:
     restart: always  # Ensures Zookeeper restarts if it fails
     ports:
       - '2181:2181'
+    networks:
+      - finnhub-network
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
       - zookeeper_data:/var/lib/zookeeper
       - zookeeper_log:/var/log/zookeeper
+
   broker:
     image: confluentinc/cp-kafka:latest
     hostname: broker
@@ -25,6 +28,8 @@ services:
       - zookeeper
     ports:
       - '9092:9092'
+    networks:
+      - finnhub-network
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
@@ -37,6 +42,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       # KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z broker 29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
     hostname: schema-registry
@@ -47,11 +58,19 @@ services:
       - broker
     ports:
       - "8081:8081"
+    networks:
+      - finnhub-network
     environment:
       # SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper:2181" #(depreciated)
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "broker:29092"
       SCHEMA_REGISTRY_HOST_NAME: "localhost"
       SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081" #(default: http://0.0.0.0:8081)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   control-center:
     image: confluentinc/cp-enterprise-control-center:latest
     hostname: control-center
@@ -63,6 +82,8 @@ services:
       - schema-registry
     ports:
       - "9021:9021"
+    networks:
+      - finnhub-network
     environment:
       CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
       CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
@@ -73,12 +94,15 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
+
   kafka-rest:
     image: confluentinc/cp-kafka-rest:latest
     hostname: kafka-rest
     restart: always
     ports:
       - "8082:8082"
+    networks:
+      - finnhub-network
     depends_on:
       - schema-registry
       - broker
@@ -88,6 +112,7 @@ services:
       KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://localhost:8081'
       KAFKA_REST_HOST_NAME: localhost
       KAFKA_REST_LISTENERS: 'http://0.0.0.0:8082'
+
   ksqldb-server:
     image: confluentinc/cp-ksqldb-server:latest
     hostname: ksqldb-server
@@ -95,6 +120,8 @@ services:
     restart: always
     ports:
       - "8088:8088"
+    networks:
+      - finnhub-network
     environment:
       KSQL_CONFIG_DIR: "/etc/ksqldb"
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"
@@ -103,14 +130,100 @@ services:
       KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
     depends_on:
       - broker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   ksqldb-cli:
     image: confluentinc/cp-ksqldb-cli:latest
     container_name: ksqldb-cli
+    hostname: ksqldb-cli
     entrypoint: /bin/sh
     tty: true
     restart: always
+    networks:
+      - finnhub-network
     depends_on:
       - ksqldb-server
+
+  ksql-handler:
+    build:
+      context: ./KsqlHandler
+      dockerfile: Dockerfile
+    container_name: ksql-handler
+    hostname: ksql-handler
+    ports:
+      - "5003:5003"
+    networks:
+      - finnhub-network
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q SUCCESS /tmp/healthcheck.log || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+    depends_on:
+      broker:
+        condition: service_healthy
+      ksqldb-server:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+
+  finnhub-producer:
+    build:
+      context: ./FinnhubProducer
+      dockerfile: Dockerfile
+    container_name: finnhub-producer
+    hostname: finnhub-producer
+    ports:
+      - "5004:5004"
+    networks:
+      - finnhub-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY}
+    depends_on:
+      ksql-handler:
+        condition: service_healthy
+
+  finnhub-consumer:
+    build:
+      context: ./FinnhubConsumer
+      dockerfile: Dockerfile
+    container_name: finnhub-consumer
+    hostname: finnhub-consumer
+    ports:
+      - "5005:5005"
+    networks:
+      - finnhub-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    environment:
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+    depends_on:
+      ksql-handler:
+        condition: service_healthy
 
 volumes:
   zookeeper_data:
