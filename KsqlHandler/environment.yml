@@ -6,4 +6,7 @@ dependencies:
   - python-dotenv=1.0.1
   - python-confluent-kafka=2.8.0
   - httpx=0.28.1
+  - requests=2.32.3
+  - attrs=25.1.0
+  - cachetools=5.5.1
 

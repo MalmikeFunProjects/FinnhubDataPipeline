@@ -1,7 +1,7 @@
 from confluent_kafka import KafkaError
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.schema_registry import SchemaRegistryClient, Schema
-from confluent_kafka.schema_registry.error import SchemaParseException
+from confluent_kafka.schema_registry.error import SchemaRegistryError
 
 
 class SetUpKafkaTopics:
@@ -28,7 +28,7 @@ class SetUpKafkaTopics:
                 subject_name, schema=schema)
             print(f"Avro schema registered with ID: {
                   schema_id} for subject {subject_name}")
-        except SchemaParseException as e:
+        except SchemaRegistryError as e:
             # print(f"Avro schema is invalid: {e}")
             raise e
         except Exception as e:
