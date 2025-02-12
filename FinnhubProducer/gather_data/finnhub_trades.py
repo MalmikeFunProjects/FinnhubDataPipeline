@@ -39,7 +39,7 @@ class FinnhubTrades:
         self.producer.publishUsingDataFrames(topic=KAFKA_TOPIC_TRADES,
                               df=df,
                               key=self.key_name)
-
+        self.message_count += 1
       if(self.max_messages and self.message_count >= self.max_messages):
         print(f"Recieved {self.max_messages} messages. Closing connection")
         ws.close()
