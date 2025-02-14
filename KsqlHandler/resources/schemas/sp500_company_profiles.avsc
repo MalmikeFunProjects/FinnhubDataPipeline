@@ -4,62 +4,77 @@
     "fields": [
         {
             "name": "Country",
-            "type": "string"
+            "type": "string",
+            "doc": "The country in which the company is headquartered."
         },
         {
             "name": "Currency",
-            "type": "string"
+            "type": "string",
+            "doc": "The currency in which the company operates or reports financials."
         },
         {
             "name": "EstimateCurrency",
-            "type": "string"
+            "type": "string",
+            "doc": "The currency used for financial estimates (if different from 'Currency')."
         },
         {
             "name": "Exchange",
-            "type": "string"
+            "type": "string",
+            "doc": "The stock exchange where the company's shares are listed."
         },
         {
             "name": "FinnhubIndustry",
-            "type": "string"
+            "type": "string",
+            "doc": "The industry category that the company belongs to, as classified by Finnhub."
         },
         {
             "name": "IPO",
-            "type": "string"
+            "type": "string",
+            "doc": "The initial public offering (IPO) date for the company, represented as a string."
         },
         {
             "name": "Logo",
             "type": [
                 "string",
                 "null"
-            ]
+            ],
+            "doc": "The URL to the company's logo image, or null if no logo is available."
         },
         {
             "name": "MarketCapitalization",
-            "type": "double"
+            "type": "double",
+            "doc": "The market capitalization of the company, represented as a double value."
         },
         {
             "name": "Name",
-            "type": "string"
+            "type": "string",
+            "doc": "The name of the company."
         },
         {
             "name": "Phone",
-            "type": "double"
+            "type": "double",
+            "doc": "The phone number for the company's main office or headquarters."
         },
         {
             "name": "ShareOutstanding",
-            "type": "double"
+            "type": "double",
+            "doc": "The total number of shares that are currently outstanding for the company."
         },
         {
             "name": "Ticker",
-            "type": "string"
+            "type": "string",
+            "doc": "The stock ticker symbol for the company."
         },
         {
             "name": "Weburl",
-            "type": "string"
+            "type": "string",
+            "doc": "The URL to the company's official website."
         },
         {
             "name": "Symbol",
-            "type": "string"
+            "type": "string",
+            "doc": "The company's unique symbol or identifier in financial markets."
         }
-    ]
+    ],
+    "doc": "Avro schema for the S&P 500 company profiles. This schema contains essential information about companies listed in the S&P 500 index, including their name, ticker, market cap, industry classification, and more."
 }

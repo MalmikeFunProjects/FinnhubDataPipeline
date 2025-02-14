@@ -2,13 +2,20 @@ import os
 import re
 
 class Utilities:
-  @staticmethod
-  def load_schema(schema_path: str) -> str:
-    path = os.path.realpath(os.path.dirname(__file__))
-    with open(f"{path}/{schema_path}") as file:
-      schema_str = file.read()
-    return schema_str
+    """
+    A utility class providing methods for cleaning strings by removing
+    non-printable characters.
+    """
 
-  @staticmethod
-  def remove_no_printable_characters(input_str: str) -> str:
-    return re.sub(r'[\x00-\x1F]', "", input_str)
+    @staticmethod
+    def remove_no_printable_characters(input_str: str) -> str:
+        """
+        Removes non-printable ASCII characters (control characters) from a string.
+
+        Parameters:
+            input_str (str): The input string to clean.
+
+        Returns:
+            str: The cleaned string with non-printable characters removed.
+        """
+        return re.sub(r'[\x00-\x1F]', "", input_str)

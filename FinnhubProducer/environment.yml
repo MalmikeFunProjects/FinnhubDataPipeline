@@ -1,16 +1,16 @@
 name: finnhubDPL
 channels:
-  - defaults
-  - conda-forge
+  - defaults           # The default channel for Conda packages
+  - conda-forge        # A community-driven channel for open-source packages
 dependencies:
-  - websocket-client=1.8.0
-  - finnhub-python=2.4.18
-  - pandas=2.2.3
-  - python-confluent-kafka=2.8.0
-  - httpx=0.28.1
-  - fastavro=1.10.0
-  - python-dotenv=1.0.1
-  - requests=2.32.3
-  - attrs=25.1.0
-  - cachetools=5.5.1
-  - lxml=5.3.1
+  - websocket-client=1.8.0        # A Python WebSocket client for handling WebSocket communication
+  - finnhub-python=2.4.18         # Official Python client for the Finnhub API, which provides financial data
+  - pandas=2.2.3                  # Powerful, flexible, and easy-to-use data analysis and manipulation library for Python
+  - python-confluent-kafka=2.8.0   # Python client for Apache Kafka, enabling communication with Kafka brokers
+  - httpx=0.28.1                  # HTTP client for Python 3, fully featured and async-capable
+  - fastavro=1.10.0               # Python library for fast, efficient handling of Avro data serialization
+  - python-dotenv=1.0.1           # A Python library for managing environment variables via a .env file
+  - requests=2.32.3               # Simple HTTP library for Python, used for making HTTP requests
+  - attrs=25.1.0                  # A Python package that provides a simple way to create classes without boilerplate code
+  - cachetools=5.5.1              # Python caching utilities for memoization and caching of function calls
+  - lxml=5.3.1                    # Python library for processing XML and HTML documents, supports XPath and XSLT

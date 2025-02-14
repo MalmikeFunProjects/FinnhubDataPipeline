@@ -1,230 +1,240 @@
+# Define the networks used by the services
 networks:
   finnhub-network:
-    driver: bridge
+    driver: bridge  # Bridge network driver used for communication between containers
 
+# Define the services to be used in the Docker Compose setup
 services:
+  # Zookeeper service: Manages coordination for Kafka
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: zookeeper
-    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:latest  # Uses the Confluent Zookeeper image
+    hostname: zookeeper  # Hostname for the container
+    container_name: zookeeper  # Container name for Zookeeper
     restart: always  # Ensures Zookeeper restarts if it fails
     ports:
-      - '2181:2181'
+      - '2181:2181'  # Exposes port 2181 for communication
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: 2181  # Zookeeper client port
+      ZOOKEEPER_TICK_TIME: 2000  # Time between Zookeeper ticks in milliseconds
     volumes:
-      - zookeeper_data:/var/lib/zookeeper
-      - zookeeper_log:/var/log/zookeeper
+      - zookeeper_data:/var/lib/zookeeper  # Persists Zookeeper data
+      - zookeeper_log:/var/log/zookeeper  # Persists Zookeeper logs
 
+  # Kafka Broker: Central component of Apache Kafka, handles message brokering
   broker:
-    image: confluentinc/cp-kafka:latest
-    hostname: broker
-    container_name: broker
-    restart: always
+    image: confluentinc/cp-kafka:latest  # Uses the Confluent Kafka broker image
+    hostname: broker  # Hostname for the Kafka broker container
+    container_name: broker  # Container name for the Kafka broker
+    restart: always  # Ensures Kafka broker restarts if it fails
     depends_on:
-      - zookeeper
+      - zookeeper  # Kafka broker depends on Zookeeper to start
     ports:
-      - '9092:9092'
+      - '9092:9092'  # Exposes Kafka's default port
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://broker:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      # KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
+      KAFKA_BROKER_ID: 1  # Unique ID for this Kafka broker instance
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'  # Zookeeper address for Kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT  # Defines the security protocols for listeners
+      KAFKA_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://broker:9092  # Kafka listener addresses
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092  # Advertised listener addresses
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT  # Configures inter-broker communication
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Replication factor for offset topic
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # Time before consumer group rebalancing begins
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1  # Minimum in-sync replicas for transaction logs
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1  # Replication factor for transaction state logs
     healthcheck:
-      test: ["CMD-SHELL", "nc -z broker 29092"]
+      test: ["CMD-SHELL", "nc -z broker 29092"]  # Health check for Kafka broker availability
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Schema Registry: Provides a RESTful interface for managing Avro schemas
   schema-registry:
-    image: confluentinc/cp-schema-registry:latest
-    hostname: schema-registry
-    container_name: schema-registry
-    restart: always
+    image: confluentinc/cp-schema-registry:latest  # Uses the Confluent Schema Registry image
+    hostname: schema-registry  # Hostname for Schema Registry
+    container_name: schema-registry  # Container name for Schema Registry
+    restart: always  # Ensures Schema Registry restarts if it fails
     depends_on:
-      - zookeeper
-      - broker
+      - zookeeper  # Schema Registry depends on Zookeeper
+      - broker  # Schema Registry depends on Kafka broker
     ports:
-      - "8081:8081"
+      - "8081:8081"  # Exposes the Schema Registry API port
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     environment:
-      # SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper:2181" #(depreciated)
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "broker:29092"
-      SCHEMA_REGISTRY_HOST_NAME: "localhost"
-      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081" #(default: http://0.0.0.0:8081)
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "broker:29092"  # Connects Schema Registry to Kafka broker
+      SCHEMA_REGISTRY_HOST_NAME: "localhost"  # Hostname for Schema Registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"  # HTTP listener address for Schema Registry
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]  # Health check for Schema Registry
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Control Center: A UI and monitoring tool for managing and monitoring Kafka
   control-center:
-    image: confluentinc/cp-enterprise-control-center:latest
-    hostname: control-center
-    container_name: control-center
-    restart: always
+    image: confluentinc/cp-enterprise-control-center:latest  # Uses the Confluent Control Center image
+    hostname: control-center  # Hostname for Control Center
+    container_name: control-center  # Container name for Control Center
+    restart: always  # Ensures Control Center restarts if it fails
     depends_on:
-      - zookeeper
-      - broker
-      - schema-registry
+      - zookeeper  # Control Center depends on Zookeeper
+      - broker  # Control Center depends on Kafka broker
+      - schema-registry  # Control Center depends on Schema Registry
     ports:
-      - "9021:9021"
+      - "9021:9021"  # Exposes the Control Center port
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
-      CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://localhost:8081"
-      CONFLUENT_CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONTROL_CENTER_REPLICATION_FACTOR: 1
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      PORT: 9021
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'  # Connects Control Center to Kafka broker
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'  # Connects Control Center to Zookeeper
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://localhost:8081"  # URL for Schema Registry
+      CONTROL_CENTER_REPLICATION_FACTOR: 1  # Replication factor for internal topics
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1  # Number of partitions for internal topics
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1  # Number of partitions for monitoring topics
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1  # Replication factor for metrics topics
+      PORT: 9021  # Port for Control Center
 
+  # Kafka REST Proxy: Exposes a RESTful interface to interact with Kafka
   kafka-rest:
-    image: confluentinc/cp-kafka-rest:latest
-    hostname: kafka-rest
-    restart: always
+    image: confluentinc/cp-kafka-rest:latest  # Uses the Confluent Kafka REST Proxy image
+    hostname: kafka-rest  # Hostname for Kafka REST Proxy
+    restart: always  # Ensures Kafka REST Proxy restarts if it fails
     ports:
-      - "8082:8082"
+      - "8082:8082"  # Exposes the REST API port
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     depends_on:
-      - schema-registry
-      - broker
+      - schema-registry  # Kafka REST Proxy depends on Schema Registry
+      - broker  # Kafka REST Proxy depends on Kafka broker
     environment:
-      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
-      KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://localhost:8081'
-      KAFKA_REST_HOST_NAME: localhost
-      KAFKA_REST_LISTENERS: 'http://0.0.0.0:8082'
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'  # Connects REST Proxy to Kafka broker
+      KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper:2181'  # Connects REST Proxy to Zookeeper
+      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://localhost:8081'  # URL for Schema Registry
+      KAFKA_REST_HOST_NAME: localhost  # Hostname for REST Proxy
+      KAFKA_REST_LISTENERS: 'http://0.0.0.0:8082'  # REST Proxy listener address
 
+  # ksqlDB Server: Processes streaming data with SQL-like queries on Kafka
   ksqldb-server:
-    image: confluentinc/cp-ksqldb-server:latest
-    hostname: ksqldb-server
-    container_name: ksqldb-server
-    restart: always
+    image: confluentinc/cp-ksqldb-server:latest  # Uses the Confluent ksqlDB server image
+    hostname: ksqldb-server  # Hostname for ksqlDB server
+    container_name: ksqldb-server  # Container name for ksqlDB server
+    restart: always  # Ensures ksqlDB server restarts if it fails
     ports:
-      - "8088:8088"
+      - "8088:8088"  # Exposes the ksqlDB REST API port
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     environment:
-      KSQL_CONFIG_DIR: "/etc/ksqldb"
-      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
-      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
-      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_CONFIG_DIR: "/etc/ksqldb"  # ksqlDB configuration directory
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Kafka bootstrap servers
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"  # Schema Registry URL
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"  # Auto-creates logging stream
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"  # Auto-creates logging topics
     depends_on:
-      - broker
+      - broker  # ksqlDB server depends on Kafka broker
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/info"]
+      test: ["CMD", "curl", "-f", "http://localhost:8088/info"]  # Health check for ksqlDB server
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ksqlDB CLI: Command-line interface for interacting with ksqlDB
   ksqldb-cli:
-    image: confluentinc/cp-ksqldb-cli:latest
-    container_name: ksqldb-cli
-    hostname: ksqldb-cli
-    entrypoint: /bin/sh
-    tty: true
-    restart: always
+    image: confluentinc/cp-ksqldb-cli:latest  # Uses the Confluent ksqlDB CLI image
+    container_name: ksqldb-cli  # Container name for ksqlDB CLI
+    hostname: ksqldb-cli  # Hostname for ksqlDB CLI
+    entrypoint: /bin/sh  # Override entrypoint to start shell
+    tty: true  # Keeps the terminal open
+    restart: always  # Ensures ksqlDB CLI restarts if it fails
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     depends_on:
-      - ksqldb-server
+      - ksqldb-server  # ksqlDB CLI depends on ksqlDB server
 
+  # Custom handler service to interact with ksqlDB (user-defined)
   ksql-handler:
     build:
       context: ./KsqlHandler
-      dockerfile: Dockerfile
-    container_name: ksql-handler
-    hostname: ksql-handler
+      dockerfile: Dockerfile  # Build Dockerfile located in ./KsqlHandler
+    container_name: ksql-handler  # Container name for ksql handler
+    hostname: ksql-handler  # Hostname for ksql handler
     ports:
-      - "5003:5003"
+      - "5003:5003"  # Exposes port for interaction
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     healthcheck:
-      test: ["CMD-SHELL", "grep -q SUCCESS /tmp/healthcheck.log || exit 1"]
+      test: ["CMD-SHELL", "grep -q SUCCESS /tmp/healthcheck.log || exit 1"]  # Health check to verify success
       interval: 10s
       timeout: 30s
       retries: 5
       start_period: 60s
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: on-failure  # Restarts only on failure
         delay: 5s
         max_attempts: 3
         window: 60s
     environment:
-      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Connects to Kafka broker
     depends_on:
       broker:
-        condition: service_healthy
+        condition: service_healthy  # Waits for broker to be healthy
       ksqldb-server:
-        condition: service_healthy
+        condition: service_healthy  # Waits for ksqlDB server to be healthy
       schema-registry:
-        condition: service_healthy
+        condition: service_healthy  # Waits for Schema Registry to be healthy
 
+  # Producer service that connects to Finnhub API and sends data to Kafka
   finnhub-producer:
     build:
-      context: ./FinnhubProducer
-      dockerfile: Dockerfile
-    container_name: finnhub-producer
-    hostname: finnhub-producer
+      context: ./FinnhubProducer  # Build the service from the ./FinnhubProducer directory
+      dockerfile: Dockerfile  # Dockerfile for the producer service
+    container_name: finnhub-producer  # Container name for Finnhub producer
+    hostname: finnhub-producer  # Hostname for Finnhub producer
     ports:
-      - "5004:5004"
+      - "5004:5004"  # Exposes port for communication
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: on-failure  # Restarts only on failure
         delay: 5s
         max_attempts: 3
         window: 60s
     environment:
-      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
-      FINNHUB_API_KEY: ${FINNHUB_API_KEY}
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Kafka broker address
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY}  # API key for Finnhub
     depends_on:
       ksql-handler:
-        condition: service_healthy
+        condition: service_healthy  # Waits for ksql handler to be healthy
 
+  # Consumer service that reads data from Kafka and processes it
   finnhub-consumer:
     build:
-      context: ./FinnhubConsumer
-      dockerfile: Dockerfile
-    container_name: finnhub-consumer
-    hostname: finnhub-consumer
+      context: ./FinnhubConsumer  # Build the service from the ./FinnhubConsumer directory
+      dockerfile: Dockerfile  # Dockerfile for the consumer service
+    container_name: finnhub-consumer  # Container name for Finnhub consumer
+    hostname: finnhub-consumer  # Hostname for Finnhub consumer
     ports:
-      - "5005:5005"
+      - "5005:5005"  # Exposes port for communication
     networks:
-      - finnhub-network
+      - finnhub-network  # Connects to the finnhub-network
     deploy:
       restart_policy:
-        condition: on-failure
+        condition: on-failure  # Restarts only on failure
         delay: 5s
         max_attempts: 3
         window: 60s
     environment:
-      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Kafka broker address
     depends_on:
       ksql-handler:
-        condition: service_healthy
+        condition: service_healthy  # Waits for ksql handler to be healthy
 
+# Declare volumes for persisting data
 volumes:
-  zookeeper_data:
-  zookeeper_log:
+  zookeeper_data:  # Volume for storing Zookeeper data
+  zookeeper_log:  # Volume for storing Zookeeper logs

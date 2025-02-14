@@ -1,14 +1,17 @@
 {
-  "type": "record",
-  "name": "SymbolList",
-  "fields": [
-    {
-      "name": "Symbol",
-      "type": "string"
-    },
-    {
-      "name": "Timestamp",
-      "type": "long"
-    }
-  ]
+    "type": "record",
+    "name": "SymbolList",
+    "fields": [
+        {
+            "name": "Symbol",
+            "type": "string",
+            "doc": "The unique identifier or ticker symbol for a stock, cryptocurrency, or other traded asset."
+        },
+        {
+            "name": "Timestamp",
+            "type": "long",
+            "doc": "The timestamp when the data related to the symbol was captured, typically in Unix epoch format (milliseconds since 1970-01-01)."
+        }
+    ],
+    "doc": "Avro schema for a list of symbols and their associated timestamps. This schema is used to store and track symbols (such as stock tickers or cryptocurrency symbols) along with the time at which the data related to the symbol was recorded."
 }

@@ -13,30 +13,30 @@
                         "null"
                     ],
                     "default": [],
-                    "doc": "List of trade conditions"
+                    "doc": "List of trade conditions that may describe special characteristics of the trade, such as 'market', 'limit', 'cross', etc. This field can be null if there are no specific trade conditions."
                 }
             ]
         },
         {
             "name": "Price",
             "type": "double",
-            "doc": "Last price"
+            "doc": "The price at which the trade or price update occurred. This value represents the last traded price of the asset."
         },
         {
             "name": "Symbol",
             "type": "string",
-            "doc": "Symbol"
+            "doc": "The symbol for the asset being traded, such as 'AAPL' for Apple stock or 'BTC-USD' for Bitcoin to USD."
         },
         {
             "name": "Timestamp",
             "type": "long",
-            "doc": "UNIX milliseconds timestamp"
+            "doc": "The timestamp in Unix epoch format (milliseconds since 1970-01-01) indicating the time at which the trade occurred or the price update was recorded."
         },
         {
             "name": "Volume",
             "type": "double",
-            "doc": "Volume"
+            "doc": "The number of units of the asset traded. This represents the volume of the asset that changed hands in the trade."
         }
     ],
-    "doc": "Schema for list of trades or price updates"
+    "doc": "Schema for representing individual trades or price updates for financial assets. Each record contains information about the trade conditions, price, symbol, timestamp, and trade volume."
 }

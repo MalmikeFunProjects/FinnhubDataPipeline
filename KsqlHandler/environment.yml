@@ -1,12 +1,18 @@
-name: finnhubDPL
-channels:
-  - defaults
-  - conda-forge
-dependencies:
-  - python-dotenv=1.0.1
-  - python-confluent-kafka=2.8.0
-  - httpx=0.28.1
-  - requests=2.32.3
-  - attrs=25.1.0
-  - cachetools=5.5.1
+# Environment file for setting up a project with the necessary dependencies.
+# This configuration installs specific Python packages from the 'defaults' and 'conda-forge' channels.
 
+name: finnhubDPL  # Name of the conda environment. This environment is named 'finnhubDPL'
+
+channels:
+  - defaults         # The default conda channel for stable packages
+  - conda-forge      # An additional channel for community-maintained packages
+
+dependencies:
+  # List of Python packages required for the project, specifying the exact versions to be installed:
+
+  - python-dotenv=1.0.1  # Library for loading environment variables from a .env file
+  - python-confluent-kafka=2.8.0  # Client for Kafka in Python, specifically version 2.8.0
+  - httpx=0.28.1  # HTTP client for Python, version 0.28.1, supporting async requests
+  - requests=2.32.3  # Popular HTTP library for making API calls, specifically version 2.32.3
+  - attrs=25.1.0  # Python package for easier creation of classes with attributes
+  - cachetools=5.5.1  # A simple caching library for Python, version 5.5.1

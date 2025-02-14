@@ -1,12 +1,17 @@
-name: finnhubDPL
+# Define the name of the Conda environment
+name: finnhubDPL  # This is the environment's name and will be used to activate it
+
+# Define the channels where Conda will search for packages
 channels:
-  - defaults
-  - conda-forge
+  - defaults        # The default Conda channel, containing many popular and common packages
+  - conda-forge     # A community-maintained channel that offers a wide variety of packages, often updated more frequently than defaults
+
+# List of dependencies that will be installed in the environment
 dependencies:
-  - python-confluent-kafka=2.8.0
-  - httpx=0.28.1
-  - fastavro=1.10.0
-  - python-dotenv=1.0.1
-  - requests=2.32.3
-  - attrs=25.1.0
-  - cachetools=5.5.1
+  - python-confluent-kafka=2.8.0  # Confluent Kafka Python client, version 2.8.0 for interacting with Kafka
+  - httpx=0.28.1                  # HTTP client library for Python, provides async support, used for making HTTP requests
+  - fastavro=1.10.0               # Fastavro is a fast AVRO (Apache Avro) library for reading and writing Avro files
+  - python-dotenv=1.0.1           # Python library for reading key-value pairs from a `.env` file and setting them as environment variables
+  - requests=2.32.3               # The `requests` library, a simple HTTP library for making network requests
+  - attrs=25.1.0                  # A library for creating classes without boilerplate code; helpful for defining attributes easily
+  - cachetools=5.5.1              # A library providing extensible cache implementations for Python, useful for caching and improving performance
