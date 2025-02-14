@@ -79,11 +79,6 @@ The pipeline consists of the following components:
         ```sh
         ./run_docker_compose.sh -s all_services
         ```
-    **POINTS TO NOTE:**
-    - The services that fall under `application_services` depend on `kafka_core` services, therefore:
-        - Running `./run_docker_compose.sh -r application_services` would automatically start `kafka_core` services.
-        - Running `./run_docker_compose.sh -r application_services -b` triggers a rebuild of the services under `application_services` and not those in `kafka_core`.
-        - Running `./run_docker_compose.sh -s application_services` would only stop the sevices under `application_services`.
 
     **Points to Note about Service Dependencies**
 
