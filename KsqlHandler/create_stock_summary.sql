@@ -84,7 +84,7 @@ EMIT FINAL;                             -- Emit the final result for each tumbli
 CREATE STREAM STOCK_PRICES_1S_STREAM
 (
     SYMBOL VARCHAR KEY,                  -- Declare SYMBOL as the key for the stream
-    PRICE DOUBLE,                         -- The price of the stock
+    AVG_PRICE DOUBLE,                         -- The price of the stock
     TIMESTAMP BIGINT                      -- The timestamp when the price is recorded
 )
 WITH
@@ -104,7 +104,7 @@ CREATE TABLE STOCK_SUMMARY WITH (
 ) AS
 SELECT
   TIMESTAMP,                            -- Timestamp of the aggregation window
-  SUM(PRICE) AS TOTAL_PRICE,             -- Sum of stock prices within the window
+  SUM(AVG_PRICE) AS TOTAL_PRICE,             -- Sum of stock prices within the window
   COLLECT_LIST(SYMBOL) AS symbols       -- Collect the list of symbols for each window
 FROM stock_prices_1s_stream
 WINDOW TUMBLING(SIZE 1 SECONDS)         -- Tumbling window of 1 second
