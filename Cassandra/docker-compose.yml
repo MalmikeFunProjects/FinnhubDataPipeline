@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+  cassandra-seed:
+    image: cassandra:latest
+    container_name: cassandra-seed
+    hostname: cassandra-seed
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-seed-data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=my_cluster
+      - CASSANDRA_SEEDS=cassandra-seed
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  cassandra-node:
+    image: cassandra:latest
+    depends_on:
+      - cassandra-seed
+    volumes:
+      - cassandra-node-data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=my_cluster
+      - CASSANDRA_SEEDS=cassandra-seed
+    deploy:
+      replicas: 2
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  cql-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      cassandra-seed:
+        condition: service_healthy
+
+volumes:
+  cassandra-seed-data:
+  cassandra-node-data:
