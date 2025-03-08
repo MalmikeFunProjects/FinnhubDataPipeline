@@ -33,7 +33,14 @@ services:
         echo 'Creating keyspace and tables...';
         cqlsh cassandra -f /init-scripts/init.cql;
         echo 'Initialization completed.'
+        echo "SUCCESS" > /tmp/healthcheck.log
       "
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q SUCCESS /tmp/healthcheck.log || exit 1"]  # Health check to verify success
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
 
 volumes:
   cassandra-data:

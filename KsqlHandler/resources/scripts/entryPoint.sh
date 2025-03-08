@@ -26,9 +26,9 @@ fi
 # Exit with the same exit code as the script
 # The script will exit with the same exit code as the Python script to indicate whether it ran successfully or not.
 # If uncommented, this line would make the bash script exit with the same status as the Python script.
-# exit $EXIT_CODE
+exit $EXIT_CODE
 
 # Keep container alive (useful for debugging)
 # This command keeps the Docker container running indefinitely by following (tailing) /dev/null.
 # It is helpful when debugging, as it prevents the container from exiting immediately after the script runs.
-tail -f /dev/null
+# tail -f /dev/null

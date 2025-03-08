@@ -102,6 +102,7 @@ services:
   kafka-rest:
     image: confluentinc/cp-kafka-rest:latest  # Uses the Confluent Kafka REST Proxy image
     hostname: kafka-rest  # Hostname for Kafka REST Proxy
+    container_name: kafka-rest
     restart: always  # Ensures Kafka REST Proxy restarts if it fails
     ports:
       - "8082:8082"  # Exposes the REST API port
@@ -153,6 +154,39 @@ services:
       - finnhub-network  # Connects to the finnhub-network
     depends_on:
       - ksqldb-server  # ksqlDB CLI depends on ksqlDB server
+
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra-node
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=MyCluster
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+      - ./Cassandra/init-scripts:/init-scripts
+    networks:
+      - finnhub-network  # Connects to the finnhub-network
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  cassandra-init:
+    image: cassandra:latest
+    container_name: cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./Cassandra/init-scripts:/init-scripts
+    networks:
+      - finnhub-network
+    command: sh /init-scripts/init.sh
+    restart: "no"
 
   # Custom handler service to interact with ksqlDB (user-defined)
   ksql-handler:
@@ -231,6 +265,8 @@ services:
     environment:
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Kafka broker address
     depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
       ksql-handler:
         condition: service_healthy  # Waits for ksql handler to be healthy
 
@@ -238,3 +274,4 @@ services:
 volumes:
   zookeeper_data:  # Volume for storing Zookeeper data
   zookeeper_log:  # Volume for storing Zookeeper logs
+  cassandra-data:

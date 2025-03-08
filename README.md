@@ -129,3 +129,9 @@ This setup provides a foundation for building a more complex data pipeline. You 
 - Implementing more sophisticated data transformations with ksqlDB.
 - Integrating with other data processing and visualization tools.
 
+
+## Accessing Cassandra
+```bash
+docker exec -it cassandra-node cqlsh
+```
+
