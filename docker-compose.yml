@@ -269,8 +269,8 @@ services:
     depends_on:
       cassandra-init:
         condition: service_completed_successfully
-      ksql-handler:
-        condition: service_healthy  # Waits for ksql handler to be healthy
+      # ksql-handler:
+      #   condition: service_healthy  # Waits for ksql handler to be healthy
 
 # Declare volumes for persisting data
 volumes:

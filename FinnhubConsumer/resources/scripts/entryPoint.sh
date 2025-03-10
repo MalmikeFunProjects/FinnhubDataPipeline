@@ -12,7 +12,8 @@ cp sample.env .env
 
 # Run the Python script "finnhub_consumer.py" inside the activated Conda environment
 # Capture the exit code of the Python script to determine if it ran successfully or failed
-python -u finnhub_consumer.py
+# python -u finnhub_consumer.py
+python -u cassandra_test.py
 EXIT_CODE=$?
 
 # Check the exit code of the Python script
