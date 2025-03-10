@@ -8,6 +8,8 @@ import utils.settings as Utils
 class KafkaTopics(Enum):
     STOCK_SUMMARY = Utils.KAFKA_TOPIC_STOCK_SUMMARY  # Topic for stock summary data
     LATEST_PRICES = Utils.KAFKA_TOPIC_LATEST_PRICES  # Topic for the latest stock prices
+    COMPANY_SYMBOLS = "COMPANY_SYMBOLS"
+    STOCK_PRICES_1S = "STOCK_PRICES_1S"
 
 # Main consumer class for processing data from Kafka topics
 class FinnhubConsumer:

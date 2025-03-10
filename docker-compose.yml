@@ -254,6 +254,8 @@ services:
     hostname: finnhub-consumer  # Hostname for Finnhub consumer
     ports:
       - "5005:5005"  # Exposes port for communication
+    volumes:
+      - ./FinnhubConsumer/app:/app
     networks:
       - finnhub-network  # Connects to the finnhub-network
     deploy:

@@ -2,13 +2,10 @@
 FROM continuumio/miniconda3
 
 # Set the working directory inside the container to /app
-WORKDIR /app
+WORKDIR /
 
-# Copy the current directory content (the application) into the working directory in the container
-COPY ./ ./
-
-# Copy the environment file for setting up dependencies (e.g., libraries, tools)
-COPY sample.env .env
+COPY environment.yml environment.yml
+COPY resources resources
 
 # Create a Conda environment from the environment.yml file
 # This will install necessary dependencies specified in the environment.yml
@@ -29,4 +26,4 @@ EXPOSE 5005
 # CMD ["conda", "run", "--no-capture-output", "-n", "finnhubDPL", "python3", "main.py"]
 
 # Set the entry point for the container to use the provided shell script
-ENTRYPOINT ["/app/resources/scripts/entryPoint.sh"]
+ENTRYPOINT ["/resources/scripts/entryPoint.sh"]
