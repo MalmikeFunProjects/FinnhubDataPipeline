@@ -3,6 +3,7 @@ channels:
   - defaults           # The default channel for Conda packages
   - conda-forge        # A community-driven channel for open-source packages
 dependencies:
+  - python=3.12
   - websocket-client=1.8.0        # A Python WebSocket client for handling WebSocket communication
   - finnhub-python=2.4.18         # Official Python client for the Finnhub API, which provides financial data
   - pandas=2.2.3                  # Powerful, flexible, and easy-to-use data analysis and manipulation library for Python

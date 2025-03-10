@@ -3,6 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
+  - python=3.12
   - websocket-client=1.8.0
   - finnhub-python=2.4.18
   - peewee>=3.16.2
