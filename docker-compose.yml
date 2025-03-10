@@ -189,6 +189,35 @@ services:
     restart: "no"
 
   # Custom handler service to interact with ksqlDB (user-defined)
+  cassandra-test:
+    build:
+      context: ./CassandraTest
+      dockerfile: Dockerfile  # Build Dockerfile located in ./KsqlHandler
+    container_name: cassandra-test  # Container name for ksql handler
+    hostname: cassandra-test  # Hostname for ksql handler
+    volumes:
+      - ./CassandraTest/app:/app
+    ports:
+      - "5006:5006"  # Exposes port for interaction
+    networks:
+      - finnhub-network  # Connects to the finnhub-network
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q SUCCESS /tmp/healthcheck.log || exit 1"]  # Health check to verify success
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    deploy:
+      restart_policy:
+        condition: on-failure  # Restarts only on failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+
+  # Custom handler service to interact with ksqlDB (user-defined)
   ksql-handler:
     build:
       context: ./KsqlHandler
