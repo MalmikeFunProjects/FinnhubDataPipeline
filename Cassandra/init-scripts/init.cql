@@ -11,8 +11,16 @@ USE market;
 CREATE TABLE IF NOT EXISTS shopping_cart (
     userid text PRIMARY KEY,
     item_count int,
-    last_update_timestamp timestamp
+    last_updated timestamp
 );
+
+CREATE TABLE IF NOT EXISTS market.stream_data (
+    timebucket text,
+    id uuid,
+    last_updated timestamp,
+    value double,
+    PRIMARY KEY (timebucket, id)
+) WITH CLUSTERING ORDER BY (id DESC);
 
 -- Insert some data
 INSERT INTO shopping_cart
