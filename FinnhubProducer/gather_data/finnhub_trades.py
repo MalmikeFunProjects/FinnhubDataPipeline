@@ -36,10 +36,10 @@ class FinnhubTrades:
         self.message_count = 0
         self.max_messages = max_messages
         self.column_map = {
-            "c": "TradeCondition",
+            "c": "Trade_Condition",
             "p": "Price",
             "s": "Symbol",
-            "t": "Timestamp",
+            "t": "Event_Timestamp",
             "v": "Volume"
         }
         self.key_name = "Symbol"

@@ -64,7 +64,7 @@ class ExecuteKsqlRequest:
         """
         props = {
             "stream_name": "STOCK_PRICES",
-            "column_defs": ["price DOUBLE", "symbol VARCHAR", "timestamp BIGINT"],
+            "column_defs": ["price DOUBLE", "symbol VARCHAR", "event_timestamp BIGINT"],
             "kafka_topic": UTILS.KAFKA_TOPIC_TRADES,
             "value_format": "AVRO",
         }
@@ -76,7 +76,7 @@ class ExecuteKsqlRequest:
         """
         props = {
             "stream_name": "SYMBOLS",
-            "column_defs": ["SYMBOL VARCHAR", "TIMESTAMP BIGINT"],
+            "column_defs": ["SYMBOL VARCHAR", "event_TIMESTAMP BIGINT"],
             "kafka_topic": UTILS.KAFKA_TOPIC_SYMBOLS,
             "value_format": "AVRO",
         }
@@ -95,7 +95,7 @@ class ExecuteKsqlRequest:
             ) AS
             SELECT
                 SYMBOL,
-                LATEST_BY_OFFSET(TIMESTAMP) AS TIMESTAMP
+                LATEST_BY_OFFSET(EVENT_TIMESTAMP) AS EVENT_TIMESTAMP
             FROM SYMBOLS
             GROUP BY SYMBOL
             EMIT CHANGES;
@@ -116,7 +116,7 @@ class ExecuteKsqlRequest:
             SELECT
                 sp.SYMBOL as SYMBOL,
                 COALESCE(LATEST_BY_OFFSET(sp.price), CAST(0 AS DOUBLE)) AS LAST_PRICE,
-                LATEST_BY_OFFSET(sp.TIMESTAMP) AS TIMESTAMP
+                LATEST_BY_OFFSET(sp.EVENT_TIMESTAMP) AS EVENT_TIMESTAMP
             FROM STOCK_PRICES sp
               LEFT JOIN COMPANY_SYMBOLS cs
               ON sp.SYMBOL = cs.SYMBOL
@@ -140,7 +140,7 @@ class ExecuteKsqlRequest:
                 SYMBOL,
                 COUNT(*) AS COUNT,
                 AVG(PRICE) as AVG_PRICE,
-                WINDOWSTART as TIMESTAMP
+                WINDOWSTART AS EVENT_TIMESTAMP
             FROM STOCK_PRICES
             WINDOW TUMBLING(SIZE 1 SECONDS)
             GROUP BY SYMBOL
@@ -158,7 +158,7 @@ class ExecuteKsqlRequest:
           CREATE STREAM {stream_name} (
               SYMBOL VARCHAR KEY,
               AVG_PRICE DOUBLE,
-              TIMESTAMP BIGINT
+              event_timestamp BIGINT
           ) WITH (
               KAFKA_TOPIC = '{topic_name}',
               VALUE_FORMAT = 'AVRO',
@@ -181,12 +181,12 @@ class ExecuteKsqlRequest:
                 KEY_FORMAT = 'AVRO'
             ) AS
             SELECT
-                TIMESTAMP,
+                EVENT_TIMESTAMP,
                 SUM(AVG_PRICE) AS TOTAL_PRICE,
                 COLLECT_LIST(SYMBOL) AS symbols
             FROM {stream_name}
             WINDOW TUMBLING (SIZE 1 SECONDS)
-            GROUP BY TIMESTAMP
+            GROUP BY EVENT_TIMESTAMP
             EMIT FINAL;
         """
         self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)

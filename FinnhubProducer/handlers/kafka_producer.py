@@ -149,10 +149,10 @@ class KafkaProducer:
         Raises:
             Exception: If any exception occurs while producing the records to Kafka.
         """
-        timestamp = int(time.time())  # Generate a timestamp for each record
+        event_timestamp = int(time.time())  # Generate a timestamp for each record
         for item in items:
             # Create a record for each item with a timestamp
-            record = {key: item, "Timestamp": int(time.time())}
+            record = {key: item, "Event_Timestamp": int(event_timestamp)}
             try:
                 # Publish the record to Kafka
                 self.publishToKafka(topic=topic, key=key, record=record)
