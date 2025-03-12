@@ -8,16 +8,10 @@ WITH REPLICATION = {
 USE market;
 
 -- Create a table
-CREATE TABLE IF NOT EXISTS shopping_cart (
+CREATE TABLE IF NOT EXISTS market.shopping_cart (
     userid text PRIMARY KEY,
     item_count int,
     last_update_timestamp timestamp
-);
-
-CREATE TABLE IF NOT EXISTS stock_summary (
-    timestamp bigint PRIMARY KEY,
-    total_price decimal,
-    symbols list<text>
 );
 
 CREATE TABLE IF NOT EXISTS market.stream_data (
@@ -28,12 +22,46 @@ CREATE TABLE IF NOT EXISTS market.stream_data (
     PRIMARY KEY (timebucket, id)
 ) WITH CLUSTERING ORDER BY (id DESC);
 
+-- Table for finnhub_trades data
+-- CREATE TABLE IF NOT EXISTS market.finnhub_trade (
+--     symbol TEXT,
+--     event_timestamp BIGINT,
+--     price DOUBLE,
+--     PRIMARY KEY ((event_timestamp), symbol)
+-- );
 
--- Insert some data
-INSERT INTO shopping_cart
-(userid, item_count, last_update_timestamp)
-VALUES ('9876', 2, toTimeStamp(now()));
+-- Table for finnhub_company_symbols data
+-- CREATE TABLE IF NOT EXISTS market.finnhub_company_symbol (
+--     event_timestamp BIGINT,
+--     symbol TEXT,
+--     PRIMARY KEY ((event_timestamp), symbol)
+-- );
 
-INSERT INTO shopping_cart
-(userid, item_count, last_update_timestamp)
-VALUES ('1234', 5, toTimeStamp(now()));
+-- Table for STOCK_PRICES_1S data
+CREATE TABLE IF NOT EXISTS market.stock_price_1s (
+    event_timestamp BIGINT,
+    symbol TEXT,
+    count INT,
+    avg_price DOUBLE,
+    PRIMARY KEY ((event_timestamp), symbol)
+);
+
+-- Table for STOCK_SUMMARY data
+CREATE TABLE IF NOT EXISTS market.stock_summary (
+    event_timestamp BIGINT PRIMARY KEY,
+    total_price DOUBLE,
+    symbols list<TEXT>
+);
+
+-- Table for LATEST_PRICES data
+CREATE TABLE IF NOT EXISTS market.latest_price (
+    symbol TEXT,
+    last_price DOUBLE,
+    event_timestamp BIGINT,
+    PRIMARY KEY ((event_timestamp), symbol)
+);
+
+-- Table for COMPANY_SYMBOLS data
+CREATE TABLE IF NOT EXISTS market.company_symbol (
+    symbol TEXT PRIMARY KEY
+);
