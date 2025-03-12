@@ -7,13 +7,13 @@ CREATE STREAM STOCK_PRICES
 (
     price DOUBLE,             -- Price of the stock
     symbol VARCHAR,           -- Stock symbol (ticker)
-    timestamp BIGINT          -- Timestamp of the price entry (epoch time)
+    event_timestamp BIGINT          -- Timestamp of the price entry (epoch time)
 )
 WITH
 (
     KAFKA_TOPIC='finnhub_trades',    -- Kafka topic for incoming data
     VALUE_FORMAT='AVRO',             -- The format of the value in the Kafka topic (can be AVRO or JSON)
-    TIMESTAMP='timestamp'            -- Specifies that the 'timestamp' field should be used for event time
+    TIMESTAMP='event_timestamp'            -- Specifies that the 'timestamp' field should be used for event time
 );
 
 -- Create a stream named SYMBOLS to get the latest stock symbols and their corresponding timestamp.
@@ -21,13 +21,13 @@ WITH
 CREATE STREAM SYMBOLS
 (
     SYMBOL VARCHAR,              -- The stock symbol (ticker)
-    TIMESTAMP BIGINT             -- The timestamp of the symbol entry (epoch time)
+    EVENT_TIMESTAMP BIGINT             -- The timestamp of the symbol entry (epoch time)
 )
 WITH
 (
     KAFKA_TOPIC = 'finnhub_company_symbols',  -- Kafka topic containing stock symbols
     VALUE_FORMAT = 'AVRO',                   -- Data format is AVRO
-    TIMESTAMP = 'timestamp'                  -- Uses the timestamp field for event time
+    TIMESTAMP = 'event_timestamp'                  -- Uses the timestamp field for event time
 );
 
 -- Create a table called COMPANY_SYMBOLS that stores the latest stock symbols,
@@ -39,7 +39,7 @@ CREATE TABLE COMPANY_SYMBOLS (
 ) AS
 SELECT
   SYMBOL,                               -- The stock symbol
-  LATEST_BY_OFFSET(TIMESTAMP) AS MX      -- Latest timestamp for each symbol (determined by the latest offset)
+  LATEST_BY_OFFSET(EVENT_TIMESTAMP) AS EVENT_TIMESTAMP      -- Latest timestamp for each symbol (determined by the latest offset)
 FROM SYMBOLS
 GROUP BY SYMBOL
 EMIT CHANGES;                           -- Continuous stream of updates on the latest symbol information
@@ -54,7 +54,7 @@ CREATE TABLE LATEST_PRICES (
 SELECT
   sp.SYMBOL as SYMBOL,                   -- Stock symbol from STOCK_PRICES stream
   COALESCE(LATEST_BY_OFFSET(sp.price), CAST(0 AS DOUBLE)) AS LAST_PRICE,  -- Get the most recent price, default to 0 if no price is available
-  LATEST_BY_OFFSET(sp.TIMESTAMP) AS TIMESTAMP  -- Get the most recent timestamp
+  LATEST_BY_OFFSET(sp.EVENT_TIMESTAMP) AS EVENT_TIMESTAMP  -- Get the most recent timestamp
 FROM STOCK_PRICES sp
   LEFT JOIN COMPANY_SYMBOLS cs           -- Join with the COMPANY_SYMBOLS table to match stock symbols
   ON sp.SYMBOL = cs.SYMBOL
@@ -72,7 +72,7 @@ CREATE TABLE STOCK_PRICES_1S (
 ) AS
 SELECT
   SYMBOL,                               -- Stock symbol
-  WINDOWSTART AS TIMESTAMP,             -- The start of the tumbling window (timestamp)
+  WINDOWSTART AS EVENT_TIMESTAMP,             -- The start of the tumbling window (timestamp)
   COUNT(*) AS COUNT,                     -- The number of stock entries within the 1-second window
   AVG(PRICE) AS AVG_PRICE                -- The average stock price within the 1-second window
 FROM STOCK_PRICES
@@ -85,7 +85,7 @@ CREATE STREAM STOCK_PRICES_1S_STREAM
 (
     SYMBOL VARCHAR KEY,                  -- Declare SYMBOL as the key for the stream
     AVG_PRICE DOUBLE,                         -- The price of the stock
-    TIMESTAMP BIGINT                      -- The timestamp when the price is recorded
+    event_timestamp BIGINT                      -- The timestamp when the price is recorded
 )
 WITH
 (
@@ -103,12 +103,12 @@ CREATE TABLE STOCK_SUMMARY WITH (
     KEY_FORMAT = 'AVRO'                   -- Key format is AVRO
 ) AS
 SELECT
-  TIMESTAMP,                            -- Timestamp of the aggregation window
+  EVENT_TIMESTAMP,                            -- Timestamp of the aggregation window
   SUM(AVG_PRICE) AS TOTAL_PRICE,             -- Sum of stock prices within the window
   COLLECT_LIST(SYMBOL) AS symbols       -- Collect the list of symbols for each window
 FROM stock_prices_1s_stream
 WINDOW TUMBLING(SIZE 1 SECONDS)         -- Tumbling window of 1 second
-GROUP BY TIMESTAMP
+GROUP BY EVENT_TIMESTAMP
 EMIT CHANGES;                           -- Continuously emit changes as new data comes in
 
 -- The following query will return a continuous stream of stock summary data.
