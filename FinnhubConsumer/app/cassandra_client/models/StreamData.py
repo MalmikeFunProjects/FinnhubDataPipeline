@@ -10,7 +10,7 @@ class StreamData(Model):
     timebucket = columns.Text(primary_key=True, partition_key=True)
     id = columns.UUID(primary_key=True, default=uuid.uuid4)
     last_updated = columns.DateTime(default=datetime.datetime.now)
-    value = columns.Float()
+    value = columns.Double()
 
     @classmethod
     def generate_timebucket(cls, dt=None):
