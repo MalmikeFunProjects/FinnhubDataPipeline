@@ -16,3 +16,9 @@ dependencies:
   - attrs=25.1.0                  # A Python package that provides a simple way to create classes without boilerplate code
   - cachetools=5.5.1              # Python caching utilities for memoization and caching of function calls
   - lxml=5.3.1                    # Python library for processing XML and HTML documents, supports XPath and XSLT
+  - fastapi=0.115.11
+  - pip
+  - pip:
+      - cassandra-driver==3.29.2
+
+

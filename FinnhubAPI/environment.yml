@@ -1,0 +1,17 @@
+# Define the name of the Conda environment
+name: finnhubDPL  # This is the environment's name and will be used to activate it
+
+# Define the channels where Conda will search for packages
+channels:
+  - defaults        # The default Conda channel, containing many popular and common packages
+  - conda-forge     # A community-maintained channel that offers a wide variety of packages, often updated more frequently than defaults
+
+# List of dependencies that will be installed in the environment
+dependencies:
+  - python=3.12
+  - python-dotenv=1.0.1           # Python library for reading key-value pairs from a `.env` file and setting them as environment variables
+  - pip
+  - fastapi=0.115.11
+  - uvicorn=0.34.0
+  - pip:
+      - cassandra-driver==3.29.2

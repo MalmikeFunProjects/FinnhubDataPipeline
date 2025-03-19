@@ -272,6 +272,29 @@ services:
       ksql-handler:
         condition: service_healthy  # Waits for ksql handler to be healthy
 
+  finnhub-api:
+    build:
+      context: ./FinnhubAPI
+      dockerfile: Dockerfile
+    container_name: finnhub-api
+    hostname: finnhub-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./FinnhubAPI/app:/app
+    networks:
+      - finnhub-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+
+
 # Declare volumes for persisting data
 volumes:
   zookeeper_data:  # Volume for storing Zookeeper data
