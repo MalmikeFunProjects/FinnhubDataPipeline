@@ -39,26 +39,39 @@ CREATE TABLE IF NOT EXISTS market.stream_data (
 
 -- Table for STOCK_PRICES_1S data
 CREATE TABLE IF NOT EXISTS market.stock_price_1s (
+    partition_date DATE,
     event_timestamp BIGINT,
+    processing_id UUID,
+    insertion_timestamp BIGINT,
     symbol TEXT,
     count INT,
     avg_price DOUBLE,
-    PRIMARY KEY ((event_timestamp), symbol)
+    is_processed boolean,
+    PRIMARY KEY ((partition_date), event_timestamp, processing_id, symbol)
 );
 
 -- Table for STOCK_SUMMARY data
 CREATE TABLE IF NOT EXISTS market.stock_summary (
-    event_timestamp BIGINT PRIMARY KEY,
+    partition_date DATE,
+    event_timestamp BIGINT,
+    processing_id UUID,
+    insertion_timestamp BIGINT,
     total_price DOUBLE,
-    symbols list<TEXT>
+    symbols list<TEXT>,
+    is_processed boolean,
+    PRIMARY KEY ((partition_date), event_timestamp, processing_id)
 );
 
 -- Table for LATEST_PRICES data
 CREATE TABLE IF NOT EXISTS market.latest_price (
+    partition_date DATE,
+    event_timestamp BIGINT,
+    processing_id UUID,
+    insertion_timestamp BIGINT,
     symbol TEXT,
     last_price DOUBLE,
-    event_timestamp BIGINT,
-    PRIMARY KEY ((event_timestamp), symbol)
+    is_processed boolean,
+    PRIMARY KEY ((partition_date), event_timestamp, processing_id, symbol)
 );
 
 -- Table for COMPANY_SYMBOLS data
