@@ -25,6 +25,13 @@ COPY resources ./resources
 # Configure Poetry to create virtualenvs in the project directory
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
+# Make sure Python output is sent straight to terminal without buffering
+ENV PYTHONUNBUFFERED=1
+
+# By default, Python buffers stdout when it's not a TTY
+# This ensures even with a non-TTY (like in Docker), logs are immediate
+ENV PYTHONFAULTHANDLER=1
+
 # RUN which curl
 
 # # Install project dependencies using poetry
