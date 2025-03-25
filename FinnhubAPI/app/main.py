@@ -8,6 +8,7 @@ from routers.stock_summary_router import stock_summary_router
 from routers.latest_price_router import latest_price_router
 from routers.company_symbols_router import company_symbol_router
 from routers.stock_price_1s_router import stock_price_1s_router
+from routers.web_sockets_stat_router import web_socket_stats_router
 from contextlib import asynccontextmanager
 from utils.default_log_setting import DefaultLogger
 from routers.ConnectionManager import get_connection_manager
@@ -64,6 +65,7 @@ app.add_middleware(
 )
 LogRequestMiddleware(app, logger)
 
+app.include_router(web_socket_stats_router)
 app.include_router(stock_summary_router)
 app.include_router(latest_price_router)
 app.include_router(company_symbol_router)
