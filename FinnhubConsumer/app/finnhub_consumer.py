@@ -109,7 +109,7 @@ class FinnhubConsumer:
             latest_prices[key] = value["LAST_PRICE"]
             data = {"symbol": key, "last_price": value["LAST_PRICE"], "event_timestamp": value["EVENT_TIMESTAMP"]}
             try:
-                count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.LatestPrice, data=data, batch_duration=60)
+                count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.LatestPrice, data=data, batch_duration=5)
                 logging.info(f"Batch size: {count}, Current topic: {topic}")
                 logging.info("-"*60)
             except Exception as e:
@@ -135,7 +135,7 @@ class FinnhubConsumer:
                         missing_symbols)+len(symbols) else list(set(missing_symbols) | symbols)
                 data = {"event_timestamp": key, "total_price": total, "symbols": all_symbols}
                 try:
-                    count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockSummary, data=data, batch_duration=30)
+                    count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockSummary, data=data, batch_duration=5)
                     logging.info(f"Batch size: {count}, Current topic: {topic}")
                     logging.info("-"*60)
                 except Exception as e:
@@ -164,7 +164,7 @@ class FinnhubConsumer:
                     "count": value["COUNT"]
                 }
                 try:
-                    count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockPrice1s, data=data, batch_duration=60)
+                    count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockPrice1s, data=data, batch_duration=5)
                     logging.info(f"Batch size: {count}, Current topic: {topic}")
                     logging.info("-"*60)
                 except Exception as e:

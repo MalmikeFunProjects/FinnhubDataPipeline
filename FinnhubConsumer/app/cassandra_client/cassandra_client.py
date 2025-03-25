@@ -209,19 +209,20 @@ class CassandraClient:
 
     def clear_batch(self, add_batch_data: bool = False, CustomModel: type[Model] = None):
         self.logger.info("Clearing batch objects ...")
-        self.logger.info(f"Add batch data: {add_batch_data}, Custom Model: {CustomModel.__name__ if CustomModel else None}")
         if(add_batch_data):
             try:
                 if(CustomModel):
                     if(CustomModel.__name__ in self.current_batch_dict.keys() and len(self.current_batch_dict[CustomModel.__name__].queries) > 0):
+                        batch_size = len(self.current_batch_dict[CustomModel.__name__].queries)
                         self.current_batch_dict[CustomModel.__name__].execute()
-                        self.logger.info(f"Batch {CustomModel.__name__} written to cassandra")
+                        self.logger.info(f"Batch {CustomModel.__name__} written to cassandra, size: {batch_size}")
                     self.current_batch_dict[CustomModel.__name__] = BatchQuery()
                 else:
                     for key, batch in self.current_batch_dict.items():
-                        if(len(batch.queries) > 0):
+                        batch_size = len(batch.queries)
+                        if(batch_size > 0):
                             batch.execute()
-                            self.logger.info(f"Batch {key} written to cassandra")
+                            self.logger.info(f"Batch {key} written to cassandra, size: {batch_size}")
                     self.current_batch_dict = {}
             except Exception as e:
                 self.logger.error(f"Error clearing batch: {str(e)}")
