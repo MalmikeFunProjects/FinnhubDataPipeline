@@ -49,7 +49,7 @@ class StockPrice1sRouter():
         query_params = dict(websocket.query_params)
 
         symbol = query_params.get("symbol")
-        start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "6"))
+        start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "1"))
 
         # Connection metadata
         metadata = {
@@ -117,7 +117,7 @@ class StockPrice1sRouter():
                 # Get parameters from payload
                 payload = data.get("payload", {})
                 symbol = payload.get("symbol", current_symbol)
-                start_days_ago = self._parse_days_param(payload.get("start_days_ago", "6"))
+                start_days_ago = self._parse_days_param(payload.get("start_days_ago", "1"))
 
                 # Create new streaming task
                 self.active_tasks[client_id] = asyncio.create_task(
@@ -146,7 +146,7 @@ class StockPrice1sRouter():
                         self._stream_stock_price_1s(
                             client_id=client_id,
                             symbol=symbol,
-                            start_days_ago=self._parse_days_param(payload.get("start_days_ago", "6"))
+                            start_days_ago=self._parse_days_param(payload.get("start_days_ago", "1"))
                         )
                     )
 
@@ -293,7 +293,7 @@ class StockPrice1sRouter():
     async def get_stock_price_1s(
         self,
         symbol: Optional[str] = None,
-        start_days_ago: Optional[int] = Query(6, ge=1, le=30, description="Days to look back"),
+        start_days_ago: Optional[int] = Query(1, ge=1, le=30, description="Days to look back"),
         limit: Optional[int] = Query(100, ge=1, le=1000, description="Maximum number of records to return")
     ) -> List[StockPrice1s]:
         """REST API endpoint to get stock price 1s"""

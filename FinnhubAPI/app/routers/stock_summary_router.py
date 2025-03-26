@@ -44,7 +44,7 @@ class StockSummaryRouter():
         connection_id = f"stock_summary_{datetime.now().timestamp()*1000}"
         query_params = dict(websocket.query_params)
 
-        start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "6"))
+        start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "1"))
 
         # Connection metadata
         metadata = {
@@ -108,7 +108,7 @@ class StockSummaryRouter():
 
                 # Get parameters from payload
                 payload = data.get("payload", {})
-                start_days_ago = self._parse_days_param(payload.get("start_days_ago", "6"))
+                start_days_ago = self._parse_days_param(payload.get("start_days_ago", "1"))
 
                 # Create new streaming task
                 self.active_tasks[client_id] = asyncio.create_task(
@@ -257,7 +257,7 @@ class StockSummaryRouter():
 
     async def get_stock_summary(
         self,
-        start_days_ago: Optional[int] = Query(6, ge=1, le=30, description="Days to look back"),
+        start_days_ago: Optional[int] = Query(1, ge=1, le=30, description="Days to look back"),
         limit: Optional[int] = Query(100, ge=1, le=1000, description="Maximum number of records to return")
     ) -> List[StockSummary]:
         """REST API endpoint to get stock summary"""
