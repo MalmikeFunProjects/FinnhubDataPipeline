@@ -21,7 +21,7 @@ class TrackedTimer(threading.Timer):
     def run(self):
         """Execute the function and cleanup when done."""
         super().run()
-        self.elapsed_time = time.time() - self.start_time
+        self.elapsed_time = time.time() - self.start_time if self.start_time else 0
         print(f"Running timer: {self.name} at {self.elapsed_time:.2f}s")
 
         # Get the singleton instance and remove this timer from running timers
@@ -49,7 +49,7 @@ class TrackedTimer(threading.Timer):
         if self.start_time is None:
             return 0  # Timer hasn't started yet
         elif self.elapsed_time == 0 and self.is_alive():
-            return time.time() - self.start_time  # Timer is still running
+            return time.time() - self.start_time# Timer is still running
         else:
             return self.elapsed_time
 
@@ -76,7 +76,10 @@ class FunctionTimer(metaclass=Singleton):
         """Cancel a specific timer by name."""
         if timer_name in self.running_timers:
             self.running_timers[timer_name].cancel()
-            del self.running_timers[timer_name]
+            try:
+                del self.running_timers[timer_name]
+            except KeyError as e:
+                print(f"KeyError in cancel_timer: {e}")
 
     def cancel_all_timers(self):
         """Cancel all running timers."""

@@ -42,7 +42,14 @@ class FinnhubConsumer:
         self.latest_prices = {}
         self.function_timer = FunctionTimer()
 
-    def __compute_total(self, missing_symbols: list[str], latest_prices: dict[str, float], total: float) -> float:
+    def __compute_total(
+        self,
+        current_symbols: list[str],
+        current_symbol_prices: list[float],
+        missing_symbols: list[str],
+        latest_prices: dict[str, float],
+        total: float
+    ) -> dict[str, any]:
         """
         Helper function to compute the total price based on the missing symbols and their latest prices.
 
@@ -56,7 +63,9 @@ class FinnhubConsumer:
         """
         for symbol in missing_symbols:
             total += latest_prices[symbol]  # Add the price for each missing symbol to the total
-        return total
+            current_symbols.append(symbol)  # Add the symbol to the list of current symbols
+            current_symbol_prices.append(latest_prices[symbol])  # Add the price to the list of current symbol prices
+        return {"total": total, "all_symbols": current_symbols, "all_symbol_prices": current_symbol_prices}
 
     def setup_cassandra_client(self):
         setup_client = SetupClient(config=self.cassandra_config)
@@ -122,18 +131,25 @@ class FinnhubConsumer:
             if value is not None:
                 # Remove any non-printable characters from the symbol list
                 symbols = {Utilities.remove_no_printable_characters(item) for item in value["SYMBOLS"]}
+                symbol_prices = value["SYMBOL_PRICES"] or []
                 # Determine the missing symbols by comparing with existing latest prices
                 missing_symbols = list(latest_prices.keys() - symbols)
                 # Compute the total price by including the missing stock prices
-                total = self.__compute_total(
+                computed_values = self.__compute_total(
+                    current_symbols = list(symbols),
+                    current_symbol_prices = symbol_prices,
                     missing_symbols=missing_symbols,
                     latest_prices=latest_prices,
                     total=value["TOTAL_PRICE"]
                 )
-                # Calculate the combined list of all symbols (either from the latest prices or stock summary)
-                all_symbols = latest_prices.keys() if len(latest_prices) == len(
-                        missing_symbols)+len(symbols) else list(set(missing_symbols) | symbols)
-                data = {"event_timestamp": key, "total_price": total, "symbols": all_symbols}
+                total, all_symbols, all_symbol_prices = computed_values.values()
+
+                data = {
+                    "event_timestamp": key,
+                    "total_price": total,
+                    "symbols": all_symbols,
+                    "symbol_prices": all_symbol_prices
+                }
                 try:
                     count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockSummary, data=data, batch_duration=5)
                     logging.info(f"Batch size: {count}, Current topic: {topic}")

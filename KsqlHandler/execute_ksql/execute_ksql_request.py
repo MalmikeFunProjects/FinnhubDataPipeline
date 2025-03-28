@@ -183,10 +183,12 @@ class ExecuteKsqlRequest:
             SELECT
                 EVENT_TIMESTAMP,
                 SUM(AVG_PRICE) AS TOTAL_PRICE,
-                COLLECT_LIST(SYMBOL) AS symbols
+                COLLECT_LIST(SYMBOL) AS SYMBOLS,
+                COLLECT_LIST(AVG_PRICE) AS SYMBOL_PRICES
             FROM {stream_name}
             WINDOW TUMBLING (SIZE 1 SECONDS)
             GROUP BY EVENT_TIMESTAMP
             EMIT FINAL;
         """
         self.__execute_statement(storageType=StorageType.TABLE, storageName=table_name, statement=statement)
+

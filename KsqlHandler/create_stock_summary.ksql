@@ -104,8 +104,9 @@ CREATE TABLE STOCK_SUMMARY WITH (
 ) AS
 SELECT
   EVENT_TIMESTAMP,                            -- Timestamp of the aggregation window
-  SUM(AVG_PRICE) AS TOTAL_PRICE,             -- Sum of stock prices within the window
-  COLLECT_LIST(SYMBOL) AS symbols       -- Collect the list of symbols for each window
+  SUM(AVG_PRICE) AS TOTAL_PRICE,              -- Sum of stock prices within the window
+  COLLECT_LIST(SYMBOL) AS symbols,             -- Collect the list of symbols for each window
+  COLLECT_LIST(AVG_PRICE) AS symbol_prices    -- Collect the prices of each symbol for each window
 FROM stock_prices_1s_stream
 WINDOW TUMBLING(SIZE 1 SECONDS)         -- Tumbling window of 1 second
 GROUP BY EVENT_TIMESTAMP

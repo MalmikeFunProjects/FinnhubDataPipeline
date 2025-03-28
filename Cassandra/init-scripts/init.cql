@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS market.stock_summary (
     insertion_timestamp BIGINT,
     total_price DOUBLE,
     symbols list<TEXT>,
+    symbol_prices list<DOUBLE>,
     is_processed boolean,
     PRIMARY KEY ((partition_date), event_timestamp, processing_id)
 );
