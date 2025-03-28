@@ -281,7 +281,7 @@ class Logger:
                 return self
 
             def __exit__(self, exc_type, exc_val, exc_tb):
-                duration = time.time() - self.start_time
+                duration = time.time() - self.start_time if self.start_time else 0
                 if exc_type is not None:
                     self.logger.log(
                         logging.ERROR,
@@ -414,7 +414,7 @@ class Logger:
 
     def log_shutdown(self) -> None:
         """Log application shutdown information."""
-        uptime = time.time() - self.start_time
+        uptime = time.time() - self.start_time if self.start_time else 0
         self.info(f"=== Application {self.name} shutting down ===")
         self.info(f"Uptime: {uptime:.2f} seconds")
 
