@@ -14,4 +14,5 @@ class StockSummary(Model):
     processing_id = columns.UUID(primary_key=True, clustering_order="ASC", default=uuid.uuid4)
     total_price = columns.Double()
     symbols = columns.List(columns.Text())
+    symbol_prices = columns.List(columns.Double())
     is_processed = columns.Boolean(default=False)
