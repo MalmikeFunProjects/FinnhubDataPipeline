@@ -50,6 +50,8 @@ class LatestPriceRouter():
 
         symbol = query_params.get("symbol")
         start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "1"))
+        since_timestamp = self._parse_timestamp_param(query_params.get("since_timestamp"))
+
 
         # Connection metadata
         metadata = {
@@ -57,6 +59,7 @@ class LatestPriceRouter():
             "connected_at": datetime.now().isoformat(),
             "symbol": symbol,
             "start_days_ago": start_days_ago,
+            "since_timestamp": since_timestamp,
             "user_agent": websocket.headers.get("user-agent", "Unknown")
         }
 
@@ -70,7 +73,8 @@ class LatestPriceRouter():
                     self._stream_latest_prices(
                         client_id=client_id,
                         symbol=symbol,
-                        start_days_ago=start_days_ago
+                        start_days_ago=start_days_ago,
+                        since_timestamp=since_timestamp
                     )
                 )
 
@@ -118,13 +122,15 @@ class LatestPriceRouter():
                 payload = data.get("payload", {})
                 symbol = payload.get("symbol", current_symbol)
                 start_days_ago = self._parse_days_param(payload.get("start_days_ago", "1"))
+                since_timestamp = self._parse_timestamp_param(payload.get("since_timestamp"))
 
                 # Create new streaming task
                 self.active_tasks[client_id] = asyncio.create_task(
                     self._stream_latest_prices(
                         client_id=client_id,
                         symbol=symbol,
-                        start_days_ago=start_days_ago
+                        start_days_ago=start_days_ago,
+                        since_timestamp=since_timestamp
                     )
                 )
 
@@ -146,7 +152,8 @@ class LatestPriceRouter():
                         self._stream_latest_prices(
                             client_id=client_id,
                             symbol=symbol,
-                            start_days_ago=self._parse_days_param(payload.get("start_days_ago", "1"))
+                            start_days_ago=self._parse_days_param(payload.get("start_days_ago", "1")),
+                            since_timestamp=self._parse_timestamp_param(payload.get("since_timestamp"))
                         )
                     )
 
@@ -166,6 +173,7 @@ class LatestPriceRouter():
         client_id: str,
         symbol: Optional[str] = None,
         start_days_ago: int = 1,
+        since_timestamp: Optional[int] = None,
         manager: ConnectionManager = Depends(get_connection_manager)
     ):
         """Stream latest price data to the client"""
@@ -177,7 +185,11 @@ class LatestPriceRouter():
                 manager = get_connection_manager()
 
             # Send initial batch
-            initial_data = self._fetch_latest_prices(symbol, start_days_ago)
+            initial_data = self._fetch_latest_prices(
+                symbol=symbol,
+                start_days_ago=start_days_ago,
+                since_timestamp=since_timestamp
+            )
 
             if not initial_data:
                 await manager.send_json(
@@ -263,8 +275,19 @@ class LatestPriceRouter():
                 task.cancel()
             self.active_tasks.pop(client_id, None)
 
-    def _parse_days_param(self, days_str: Optional[str]) -> int:
+    def _parse_timestamp_param(self, timestamp: Optional[str | int]) -> Optional[int]:
+        """Convert timestamp parameter to integer with validation"""
+        if(type(timestamp) == int):
+            return timestamp
+        try:
+            return int(timestamp) if timestamp else None
+        except (ValueError, TypeError):
+            return None
+
+    def _parse_days_param(self, days_str: Optional[str | int]) -> int:
         """Convert days parameter to integer with validation"""
+        if(type(days_str) == int):
+            return days_str
         try:
             days = int(days_str) if days_str else 1
             return max(1, min(days, 30))  # Limit between 1 and 30 days
@@ -280,6 +303,9 @@ class LatestPriceRouter():
     ) -> List[LatestPrice]:
         """Fetch latest prices from the service layer"""
         try:
+            if start_days_ago is not None and since_timestamp is None and start_days_ago == 0:
+                since_timestamp = datetime.now().timestamp() * 1000
+
             return self.service.get_latest_prices(
                 symbol=symbol,
                 start_days_ago=start_days_ago,
@@ -293,6 +319,7 @@ class LatestPriceRouter():
     async def get_latest_price(
         self,
         symbol: Optional[str] = None,
+        since_timestamp: Optional[int] = Query(None, description="Timestamp to start fetching from"),
         start_days_ago: Optional[int] = Query(1, ge=1, le=30, description="Days to look back"),
         limit: Optional[int] = Query(100, ge=1, le=1000, description="Maximum number of records to return")
     ) -> List[LatestPrice]:
@@ -301,7 +328,8 @@ class LatestPriceRouter():
             prices = self._fetch_latest_prices(
                 symbol=symbol,
                 start_days_ago=start_days_ago,
-                batch_size=limit
+                batch_size=limit,
+                since_timestamp=since_timestamp
             )
 
             if not prices:

@@ -45,12 +45,14 @@ class StockSummaryRouter():
         query_params = dict(websocket.query_params)
 
         start_days_ago = self._parse_days_param(query_params.get("start_days_ago", "1"))
+        since_timestamp = self._parse_timestamp_param(query_params.get("since_timestamp"))
 
         # Connection metadata
         metadata = {
             "type": "stock_summary",
             "connected_at": datetime.now().isoformat(),
             "start_days_ago": start_days_ago,
+            "since_timestamp": since_timestamp,
             "user_agent": websocket.headers.get("user-agent", "Unknown")
         }
 
@@ -63,7 +65,8 @@ class StockSummaryRouter():
                 self.active_tasks[client_id] = asyncio.create_task(
                     self._stream_stock_summary(
                         client_id=client_id,
-                        start_days_ago=start_days_ago
+                        start_days_ago=start_days_ago,
+                        since_timestamp=since_timestamp
                     )
                 )
 
@@ -109,12 +112,14 @@ class StockSummaryRouter():
                 # Get parameters from payload
                 payload = data.get("payload", {})
                 start_days_ago = self._parse_days_param(payload.get("start_days_ago", "1"))
+                since_timestamp = self._parse_timestamp_param(payload.get("since_timestamp"))
 
                 # Create new streaming task
                 self.active_tasks[client_id] = asyncio.create_task(
                     self._stream_stock_summary(
                         client_id=client_id,
-                        start_days_ago=start_days_ago
+                        start_days_ago=start_days_ago,
+                        since_timestamp=since_timestamp
                     )
                 )
 
@@ -134,6 +139,7 @@ class StockSummaryRouter():
         self,
         client_id: str,
         start_days_ago: int = 1,
+        since_timestamp: Optional[int] = None,
         manager: ConnectionManager = Depends(get_connection_manager)
     ):
         """Stream stock summary data to the client"""
@@ -145,7 +151,7 @@ class StockSummaryRouter():
                 manager = get_connection_manager()
 
             # Send initial batch
-            initial_data = self._fetch_stock_summary(start_days_ago)
+            initial_data = self._fetch_stock_summary(start_days_ago=start_days_ago, since_timestamp=since_timestamp)
 
             if not initial_data:
                 await manager.send_json(
@@ -230,8 +236,20 @@ class StockSummaryRouter():
                 task.cancel()
             self.active_tasks.pop(client_id, None)
 
-    def _parse_days_param(self, days_str: Optional[str]) -> int:
+    def _parse_timestamp_param(self, timestamp: Optional[str|int]) -> Optional[int]:
+        """Convert timestamp parameter to integer with validation"""
+        if(type(timestamp) == int):
+            return timestamp
+        try:
+            return int(timestamp) if timestamp else None
+        except (ValueError, TypeError):
+            return None
+
+
+    def _parse_days_param(self, days_str: Optional[str|int]) -> int:
         """Convert days parameter to integer with validation"""
+        if(type(days_str) == int):
+            return days_str
         try:
             days = int(days_str) if days_str else 1
             return max(1, min(days, 30))  # Limit between 1 and 30 days
@@ -246,6 +264,9 @@ class StockSummaryRouter():
     ) -> List[StockSummary]:
         """Fetch stock summary from the service layer"""
         try:
+            if start_days_ago is not None and since_timestamp is None and start_days_ago == 0:
+                since_timestamp = datetime.now().timestamp() * 1000
+
             return self.service.get_stock_summary(
                 start_days_ago=start_days_ago,
                 since_timestamp=since_timestamp,
@@ -257,6 +278,7 @@ class StockSummaryRouter():
 
     async def get_stock_summary(
         self,
+        since_timestamp: Optional[int] = Query(None, description="Timestamp to start fetching from"),
         start_days_ago: Optional[int] = Query(1, ge=1, le=30, description="Days to look back"),
         limit: Optional[int] = Query(100, ge=1, le=1000, description="Maximum number of records to return")
     ) -> List[StockSummary]:
@@ -264,7 +286,8 @@ class StockSummaryRouter():
         try:
             stock_summary = self._fetch_stock_summary(
                 start_days_ago=start_days_ago,
-                batch_size=limit
+                batch_size=limit,
+                since_timestamp=since_timestamp
             )
 
             if not stock_summary:
