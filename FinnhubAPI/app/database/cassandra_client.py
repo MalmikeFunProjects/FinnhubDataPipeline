@@ -409,7 +409,9 @@ class CassandraClient:
         filters: Optional[Dict[str, Any]] = None,
         order_by: Optional[str] = None,
         page_size: int = 100,
-        allow_filtering: bool = True
+        allow_filtering: bool = True,
+        gt_inclusive: bool = False,
+        lt_inclusive: bool = False
     ) -> Tuple[List[T], Optional[int]]:
         """
         Query time-partitioned data with efficient pagination
@@ -446,9 +448,9 @@ class CassandraClient:
 
             # Add timestamp filters if provided
             if isinstance(start_date_time, int):
-                query_filters[f"{timestamp_field}__gt"] = start_date_time
+                query_filters[f"{timestamp_field}__gt{"e" if gt_inclusive else ""}"] = start_date_time
             if isinstance(end_date_time, int):
-                query_filters[f"{timestamp_field}__lt"] = end_date_time
+                query_filters[f"{timestamp_field}__lt{"e" if lt_inclusive else ""}"] = end_date_time
 
             # Query results
             all_results = []
