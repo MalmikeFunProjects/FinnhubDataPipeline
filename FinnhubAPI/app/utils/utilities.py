@@ -84,7 +84,7 @@ class Utilities:
     def adjust_datetime(
         duration: Optional[dict[TimeDeltaType, int]] = None,
         return_type: TimeReturnType = TimeReturnType.MS,
-        original_date: Optional[datetime|date|int] = None,
+        original_date: Optional[datetime|date|int|float] = None,
         start_of_day: bool = False,
         previous_date: bool = True,
         date_format: str = "%Y-%m-%d %H:%M:%S"
@@ -108,7 +108,7 @@ class Utilities:
         original_date = original_date or datetime.now()
         if isinstance(original_date, date):
             original_date = datetime.combine(original_date, time.min)
-        elif isinstance(original_date, int):
+        elif isinstance(original_date, int) or isinstance(original_date, float):
             original_date = datetime.fromtimestamp(original_date / (1000 if original_date > 1e12 else 1))
         elif not isinstance(original_date, datetime):
             raise ValueError(f"Invalid original_date type: {type(original_date)}")
