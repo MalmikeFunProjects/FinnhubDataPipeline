@@ -1,4 +1,4 @@
-import { MutableRefObject, ReactNode } from 'react';
+import { MutableRefObject } from 'react';
 import {StockSummary} from "@/types"
 
 export interface WebSocketAction {
@@ -19,13 +19,19 @@ export interface StockSummaryContextType {
   lastUpdateTimeRef: MutableRefObject<number>;
   pauseChart: boolean;
   chartTimeWindow: number;
+  setChartTimeWindow: (value: number) => void;
   chartUpdateInterval: number;
+  setChartUpdateInterval: (value: number) => void;
   MAX_DATA_POINTS: number;
+  stockSummary: StockSummary | null;
+  setStockSummary: (value: StockSummary | null) => void;
   inputStartDate: number | undefined;
   setInputStartDate: (value: number | undefined) => void;
   handleStartDate: () => void;
   togglePauseChart: () => void;
-  clearChart: () => void;
+  clearChart: boolean;
+  setClearChart: (value: boolean) => void;
+  clearChartData: () => void;
   clearMessages: () => void;
 }
 
