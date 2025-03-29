@@ -26,8 +26,8 @@ interface StackedBarChartData {
   datasets: {
     label: string;
     data: number[];
-    backgroundColor: string[];
-    borderColor: string[];
+    backgroundColor: string;
+    borderColor: string;
     borderWidth: number;
   }[];
 }
@@ -43,29 +43,7 @@ const StackedBarChartComponent: React.FC = () => {
 
   const [stackedBarChartData, setStackedBarChartData] = useState<StackedBarChartData>({
     labels: [],
-    datasets: [
-      {
-        label: "Symbol Prices",
-        data: [],
-        backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-          "rgba(255, 159, 64, 0.6)",
-        ],
-        borderColor: [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-          "rgba(255, 159, 64, 1)",
-        ],
-        borderWidth: 1,
-      },
-    ],
+    datasets: []
   });
 
   // Method to update stackedBar chart with buffered data
@@ -92,44 +70,49 @@ const StackedBarChartComponent: React.FC = () => {
         // Take the last data point in the time window
         const latestData = dataInTimeWindow[dataInTimeWindow.length - 1];
 
-        setStackedBarChartData((prevData) => {
-          if (!latestData.payload.symbol_prices) {
-            return {
-              labels: [],
-              datasets: [
-                {
-                  ...prevData.datasets[0],
-                  data: [],
-                },
-              ],
-            };
-          }
-
-          const symbols = Object.keys(latestData.payload.symbol_prices);
-          const prices = Object.values(latestData.payload.symbol_prices);
-
-          // Ensure we have enough colors for all symbols
-          const backgroundColor = symbols.map((_, index) => {
-            const baseColors = prevData.datasets[0].backgroundColor;
-            return baseColors[index % baseColors.length];
+        if (!latestData.payload.symbol_prices) {
+          setStackedBarChartData({
+            labels: [],
+            datasets: []
           });
+          return;
+        }
 
-          const borderColor = symbols.map((_, index) => {
-            const baseColors = prevData.datasets[0].borderColor;
-            return baseColors[index % baseColors.length];
-          });
+        const timestamp = new Date(latestData.payload.event_timestamp).toLocaleTimeString();
 
+        // Create a dataset for each symbol
+        const symbols = Object.keys(latestData.payload.symbol_prices);
+        const colors = [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+          "rgba(255, 159, 64, 0.6)",
+        ];
+
+        const borderColors = [
+          "rgba(255, 99, 132, 1)",
+          "rgba(54, 162, 235, 1)",
+          "rgba(255, 206, 86, 1)",
+          "rgba(75, 192, 192, 1)",
+          "rgba(153, 102, 255, 1)",
+          "rgba(255, 159, 64, 1)",
+        ];
+
+        const datasets = symbols.map((symbol, index) => {
           return {
-            labels: symbols,
-            datasets: [
-              {
-                ...prevData.datasets[0],
-                data: prices,
-                backgroundColor,
-                borderColor,
-              },
-            ],
+            label: symbol,
+            data: [latestData.payload.symbol_prices[symbol]], // Array with single value for one timestamp
+            backgroundColor: colors[index % colors.length],
+            borderColor: borderColors[index % borderColors.length],
+            borderWidth: 1
           };
+        });
+
+        setStackedBarChartData({
+          labels: [timestamp], // Using timestamp as the category
+          datasets: datasets
         });
       }
     }
@@ -158,7 +141,7 @@ const StackedBarChartComponent: React.FC = () => {
             tooltip: {
               callbacks: {
                 label: (context) => {
-                  const label = context.label || '';
+                  const label = context.dataset.label || '';
                   const value = context.raw as number;
                   return `${label}: ${value.toFixed(2)}`;
                 }
@@ -170,7 +153,7 @@ const StackedBarChartComponent: React.FC = () => {
               stacked: true,
               title: {
                 display: true,
-                text: 'Symbols',
+                text: 'Time',
               },
             },
             y: {
