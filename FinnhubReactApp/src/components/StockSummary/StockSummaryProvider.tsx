@@ -23,7 +23,9 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
   const [chartUpdateInterval, setChartUpdateInterval] = useState<number>(1000);
   const [chartTimeWindow, setChartTimeWindow] = useState<number>(5000);
   const [pauseChart, setPauseChart] = useState<boolean>(false);
-  const [inputStartDate, setInputStartDate] = useState<number | undefined>();
+  const [inputStartDate, setInputStartDate] = useState<number | undefined>(undefined);
+  const [stockSummary, setStockSummary] = useState<StockSummary | null>(null);
+  const [clearChart, setClearChart] = useState<boolean>(false);
 
   // Refs to collect incoming data points
   const dataBufferRef = useRef<StockSummary[]>([]);
@@ -34,24 +36,17 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
     messages,
     sendMessage,
     disconnect,
-    reconnect,
     clearMessages,
     addConnectionQuery,
-    clearConnectionQuery,
   } = useJsonWebSocket<WebSocketStockSummary, WebSocketAction>(
     "ws://localhost:8000/stock_summary/ws"
   );
 
-  // Method to clear the chart data
-  const clearChart = useCallback(() => {
-    dataBufferRef.current = [];
-    lastUpdateTimeRef.current = 0;
-  }, []);
-
   // Handle start date submission
   const handleStartDate = useCallback(() => {
     if (typeof inputStartDate === "number") {
-      clearChart();
+      // Call the clear function directly
+      clearChartData();
       clearMessages();
       if (status === "open") {
         const message: WebSocketAction = {
@@ -88,6 +83,14 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
   }, [pauseChart, messages, addConnectionQuery, disconnect]);
 
+  // Add this function to properly clear chart data
+  const clearChartData = useCallback(() => {
+    dataBufferRef.current = [];
+    lastUpdateTimeRef.current = 0;
+    setStockSummary(null);
+    setClearChart(true);
+  }, []);
+
   // Process messages and buffer data points
   useEffect(() => {
     let unprocessed_messages: StockSummary[] = [];
@@ -97,9 +100,7 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
         msg.payload.event_timestamp >= lastUpdateTimeRef.current
       ) {
         unprocessed_messages.push(msg as StockSummary);
-      } else if (msg.type === "info") {
-        console.log(msg);
-      }
+      } 
     });
     dataBufferRef.current = unprocessed_messages;
   }, [messages]);
@@ -112,13 +113,19 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
     lastUpdateTimeRef,
     pauseChart,
     chartTimeWindow,
+    setChartTimeWindow,
     chartUpdateInterval,
+    setChartUpdateInterval,
     MAX_DATA_POINTS,
+    stockSummary,
+    setStockSummary,
     inputStartDate,
     setInputStartDate,
     handleStartDate,
     togglePauseChart,
     clearChart,
+    clearChartData,
+    setClearChart,
     clearMessages
   };
 
