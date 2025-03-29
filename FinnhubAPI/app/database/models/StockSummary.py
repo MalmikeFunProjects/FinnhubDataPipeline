@@ -13,6 +13,5 @@ class StockSummary(Model):
     # Unique ID for deduplication
     processing_id = columns.UUID(primary_key=True, clustering_order="ASC", default=uuid.uuid4)
     total_price = columns.Double()
-    symbols = columns.List(columns.Text())
-    symbol_prices = columns.List(columns.Double())
+    symbol_prices = columns.Map(key_type=columns.Text, value_type=columns.Double)
     is_processed = columns.Boolean(default=False)
