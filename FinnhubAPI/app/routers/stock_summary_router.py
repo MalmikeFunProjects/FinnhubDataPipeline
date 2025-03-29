@@ -158,15 +158,15 @@ class StockSummaryRouter():
                     client_id=client_id,
                     data={"type": "info", "message": f"No data found for stock summary"}
                 )
-                return
-
-            await manager.send_json(
-                client_id=client_id,
-                data={"type": "info", "message": f"Initial data fetched: {len(initial_data)} records"}
-            )
+                last_timestamp = datetime.now().timestamp() * 1000
+            else:
+                await manager.send_json(
+                    client_id=client_id,
+                    data={"type": "info", "message": f"Initial data fetched: {len(initial_data)} records"}
+                )
+                last_timestamp = 0
 
             # Track the last timestamp we've seen
-            last_timestamp = 0
             last_timestamp = await self._send_stock_summary_record_ws(
                 client_id=client_id,
                 last_timestamp=last_timestamp,
@@ -177,7 +177,7 @@ class StockSummaryRouter():
             while True:
                 # Fetch new stock summary since last update
                 new_stock_summary = self._fetch_stock_summary(
-                    since_timestamp=last_timestamp
+                    since_timestamp=last_timestamp,
                 )
 
                 if new_stock_summary:
@@ -204,7 +204,7 @@ class StockSummaryRouter():
     async def _send_stock_summary_record_ws(
         self,
         client_id: str,
-        last_timestamp: int=0,
+        last_timestamp: int=None,
         stock_summary: List[StockSummary]=[],
         manager: ConnectionManager = get_connection_manager()
     ) -> int:

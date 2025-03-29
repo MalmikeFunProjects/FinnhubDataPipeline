@@ -102,8 +102,8 @@ class StockSummaryService():
         self,
         start_days_ago: Optional[int] = None,
         end_days_ago: Optional[int] = None,
-        since_timestamp: Optional[int] = None,
-        end_timestamp: Optional[int] = None
+        since_timestamp: Optional[int|float] = None,
+        end_timestamp: Optional[int|float] = None
     ) -> Dict[str, Any]:
         """
         Build filter parameters for database queries.
@@ -121,8 +121,8 @@ class StockSummaryService():
 
         # Start timestamp filter
         filters["start_timestamp_filter"] = (
-            since_timestamp
-            if since_timestamp is not None
+            int(since_timestamp)
+            if since_timestamp is not None and isinstance(since_timestamp, (int, float))
             else Utilities.adjust_datetime(
                 duration={"days": start_days_ago} if start_days_ago is not None else None,
                 return_type=TimeReturnType.DATE
@@ -130,8 +130,8 @@ class StockSummaryService():
         )
         # End timestamp filter
         filters["end_timestamp_filter"] = (
-            end_timestamp
-            if end_timestamp is not None
+            int(end_timestamp)
+            if end_timestamp is not None and isinstance(end_timestamp, (int, float))
             else (
                 Utilities.adjust_datetime(
                     duration={"days": end_days_ago},
