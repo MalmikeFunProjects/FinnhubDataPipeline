@@ -1,12 +1,22 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { useJsonWebSocket } from '@/hooks/useJsonWebSocket';
-import { WebSocketStockSummary, WebSocketAction } from '@/types';
-import Button from '@/components/Button';
-import Input from '@/components/Input';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { msToDatetime } from '@/utils';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useJsonWebSocket } from "@/hooks/useJsonWebSocket";
+import { WebSocketStockSummary, WebSocketAction, StockSummary } from "@/types";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Line, Pie } from "react-chartjs-2";
+import { msToDatetime } from "@/utils";
+import Button from "@/components/UIComponents/Button";
+import NumericInput from "@/components/UIComponents/NumericInput";
 
 ChartJS.register(
   CategoryScale,
@@ -15,11 +25,16 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  // Pie chart elements
+  ArcElement
+  // Tooltip,
+  // Legend
 );
 
 // Set the maximum number of data points to display
-const MAX_DATA_POINTS = 20;
+const MAX_DATA_POINTS = 50;
+const TIME_WINDOW = 5000; // 5 seconds in milliseconds
 
 interface ChartData {
   labels: string[];
@@ -29,103 +44,302 @@ interface ChartData {
     fill: boolean;
     borderColor: string;
     tension: number;
+    extraInfo: string[][];
+  }[];
+}
+
+interface PieChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string[];
+    borderColor: string[];
+    borderWidth: number;
+    dataMap: Map<string, number>;
   }[];
 }
 
 const StockSummaryComponent: React.FC = () => {
   const minValue = 0;
   const maxValue = 30;
-  const [inputStartDate, setInputStartDate] = useState<number|undefined>();
-  const [mIndex, setMIndex] = useState(0)
+  const [inputStartDate, setInputStartDate] = useState<number | undefined>();
+  const [chartUpdateInterval, setChartUpdateInterval] = useState<number>(1000);
+  const [chartTimeWindow, setChartTimeWindow] = useState<number>(5000);
+  const [pauseChart, setPauseChart] = useState<boolean>(false);
   const [chartData, setChartData] = useState<ChartData>({
     labels: [],
     datasets: [
       {
-        label: 'Live Data',
+        label: "Total Price",
         data: [],
         fill: false,
-        borderColor: 'rgb(75, 192, 192)',
+        borderColor: "rgb(75, 192, 192)",
         tension: 0.1,
+        extraInfo: [],
       },
     ],
   });
 
-  const { status, messages, sendMessage, disconnect, reconnect } = useJsonWebSocket<WebSocketStockSummary, WebSocketAction>('ws://localhost:8000/stock_summary/ws');
+  const [pieChartData, setPieChartData] = useState<PieChartData>({
+    labels: [],
+    datasets: [
+      {
+        label: "Price",
+        data: [],
+        backgroundColor: [
+          "rgba(255, 99, 132, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(255, 206, 86, 0.6)",
+          "red",
+        ],
+        borderColor: [
+          "rgba(255, 99, 132, 1)",
+          "rgba(54, 162, 235, 1)",
+          "rgba(255, 206, 86, 1)",
+          "red",
+        ],
+        borderWidth: 1,
+        dataMap: new Map<string, number>(),
+      },
+    ],
+  });
 
-  useEffect(() => {
-    // Process only the most recent message
+  // Ref to collect incoming data points
+  const dataBufferRef = useRef<StockSummary[]>([]);
+  const lastUpdateTimeRef = useRef<number>(0);
 
-    const recentMessages = messages.slice(mIndex);
-    console.log(recentMessages.length);
+  const {
+    status,
+    messages,
+    sendMessage,
+    disconnect,
+    reconnect,
+    clearMessages,
+    addConnectionQuery,
+    clearConnectionQuery,
+  } = useJsonWebSocket<WebSocketStockSummary, WebSocketAction>(
+    "ws://localhost:8000/stock_summary/ws"
+  );
 
-    recentMessages.forEach((msg, index) => {
-      if (msg.type === 'stock_summary') {
-        const data = msg.payload;
-        const date = msToDatetime(data.event_timestamp);
+  // Method to update chart with buffered data
+  const updateChartWithBufferedData = useCallback(() => {
+    if (pauseChart) {
+      return;
+    }
+    const buffer = dataBufferRef.current;
+
+    if (buffer.length > 0) {
+      // Find the last update time if it exists, otherwise use the first message's timestamp
+      const referenceTime =
+        lastUpdateTimeRef.current || buffer[0].payload.event_timestamp;
+
+      // Filter data within the 5-second time window
+      const dataInTimeWindow = buffer.filter(
+        (item) =>
+          item.payload.event_timestamp >= referenceTime &&
+          item.payload.event_timestamp <= referenceTime + chartTimeWindow
+      );
+
+      if (dataInTimeWindow.length > 0) {
+        // If we have data in the time window, update the chart
+        // Take the last data point in the time window
+        const latestData = dataInTimeWindow[dataInTimeWindow.length - 1];
+        const date = msToDatetime(latestData.payload.event_timestamp);
+
+        setPieChartData((prevData) => {
+          if (!latestData.payload.symbol_prices) {
+            return {
+              labels: [],
+              datasets: [
+                {
+                  ...prevData.datasets[0],
+                  data: [],
+                  dataMap: new Map<string, number>(),
+                },
+              ],
+            };
+          }
+
+          return {
+            labels: Object.keys(latestData.payload.symbol_prices),
+            datasets: [
+              {
+                ...prevData.datasets[0],
+                data: Object.values(latestData.payload.symbol_prices),
+              },
+            ],
+          };
+        });
 
         setChartData((prevData) => {
           // Create copies of the existing arrays
           const newLabels = [...prevData.labels];
-          const newData = [...prevData.datasets[0].data];
+          const newDataPoints = [...prevData.datasets[0].data];
+          const newExtraInfo = [...prevData.datasets[0].extraInfo];
 
           // Add new data point
           newLabels.push(date);
-          newData.push(data.total_price);
+          newDataPoints.push(latestData.payload.total_price);
+          newExtraInfo.push(Object.keys(latestData.payload.symbol_prices));
 
-          // If we exceed our maximum, remove the oldest data points
-          if (newLabels.length > MAX_DATA_POINTS) {
-            newLabels.shift(); // Remove the first/oldest label
-            newData.shift();   // Remove the first/oldest data point
-          }
+          // Trim data to maintain maximum points
+          const trimmedLabels = newLabels.slice(-MAX_DATA_POINTS);
+          const trimmedDataPoints = newDataPoints.slice(-MAX_DATA_POINTS);
+          const trimmedExtraInfo = newExtraInfo.slice(-MAX_DATA_POINTS);
 
           return {
-            labels: newLabels,
+            labels: trimmedLabels,
             datasets: [
               {
                 ...prevData.datasets[0],
-                data: newData
-              }
-            ]
+                data: trimmedDataPoints,
+                extraInfo: trimmedExtraInfo,
+              },
+            ],
           };
         });
-      }
-      setMIndex(index + 1);
-    });
-  }, [messages]);
 
-  const handleStartDate = () => {
-    if (inputStartDate && status === 'open') {
-      // Prevent duplicate symbols
-      const message: WebSocketAction = {
-        type: "websocket_action",
-        action: "start",
-        payload: {
-          start_days_ago: inputStartDate
+        // Update the last update time
+        lastUpdateTimeRef.current = referenceTime + chartTimeWindow;
+
+        // Remove processed data from the buffer
+        dataBufferRef.current = buffer.filter(
+          (item) => item.payload.event_timestamp > lastUpdateTimeRef.current
+        );
+      } else {
+        for (let i = 0; i < buffer.length; i++) {
+          if (buffer[i].payload.event_timestamp > lastUpdateTimeRef.current) {
+            lastUpdateTimeRef.current = buffer[i].payload.event_timestamp;
+            break;
+          }
         }
-      };
+        return;
+      }
+    }
+  }, [pauseChart, dataBufferRef, lastUpdateTimeRef, chartTimeWindow]);
 
-      sendMessage(message);
+  const clear_chart = useCallback(() => {
+    dataBufferRef.current = [];
+    lastUpdateTimeRef.current = 0;
+    setChartData((prevData) => {
+      return {
+        labels: [],
+        datasets: [
+          {
+            ...prevData.datasets[0],
+            data: [],
+          },
+        ],
+      };
+    });
+  }, []);
+
+  // Use effect to process messages and buffer data points
+  useEffect(() => {
+    // Process only stock summary messages
+    let unproccessed_message: StockSummary[] = [];
+    messages.forEach((msg) => {
+      if (
+        msg.type === "stock_summary" &&
+        msg.payload.event_timestamp >= lastUpdateTimeRef.current
+      ) {
+        unproccessed_message.push(msg as StockSummary);
+      } else if (msg.type === "info") {
+        console.log(msg);
+      }
+    });
+    dataBufferRef.current = unproccessed_message;
+
+    // Attempt to update chart
+    updateChartWithBufferedData();
+  }, [messages, updateChartWithBufferedData]);
+
+  // Periodic update to ensure chart updates
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      updateChartWithBufferedData();
+    }, chartUpdateInterval); // Check every 1 seconds
+
+    return () => clearInterval(intervalId);
+  }, [updateChartWithBufferedData, chartUpdateInterval]);
+
+  const handleStartDate = (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (typeof inputStartDate === "number") {
+      clear_chart();
+      clearMessages();
+      if (status === "open") {
+        const message: WebSocketAction = {
+          type: "websocket_action",
+          action: "start",
+          payload: {
+            start_days_ago: inputStartDate,
+          },
+        };
+        sendMessage(message);
+      } else {
+        addConnectionQuery(`start_days_ago=${inputStartDate}`);
+      }
     }
     setInputStartDate(undefined);
+    setPauseChart(false);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`Reached here: ${event}`)
-    const stringValue = event.target.value;
-    const numericValue = parseInt(stringValue); // Or parseInt if you expect integers
-
-    if (!isNaN(numericValue)) {
-      setInputStartDate(numericValue < minValue ? minValue : numericValue > maxValue ? maxValue : numericValue);
-    } else if (stringValue === "") {
-      setInputStartDate(undefined); // Handle empty input as needed
+  const pauseChartFunc = () => {
+    setPauseChart(!pauseChart);
+    if (pauseChart) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].type === "stock_summary") {
+          const message = messages[i] as StockSummary;
+          const latest_timestamp = message?.payload?.event_timestamp;
+          if (latest_timestamp)
+            addConnectionQuery(`since_timestamp=${latest_timestamp}`);
+          break;
+        }
+      }
+    } else {
+      disconnect();
     }
   };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full">
         <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2">Live Stock Data</h2>
+          <h2 className="text-xl font-semibold mb-4">Live Stock Data</h2>
+
+          <div>
+            <h1 className="text-xl font-bold text-blue-600 mb-4">
+              Status: {status}
+            </h1>
+            <div className="flex space-x-3 mb-4">
+              <Button
+                variant={pauseChart || status !== "open" ? "success" : "danger"}
+                onClick={pauseChartFunc}
+              >
+                {pauseChart || status !== "open" ? "Resume" : "Pause"}
+              </Button>
+            </div>
+            <div className="flex mb-4">
+              <NumericInput
+                variant="primary"
+                type="number"
+                placeholder="Days ago to start (0 - 30 days ago)..."
+                value={inputStartDate}
+                onChange={(e) => setInputStartDate(Number(e.target.value))}
+                className="flex-grow mr-2"
+                min={minValue}
+                max={maxValue}
+              />
+              <Button
+                variant="success"
+                onClick={handleStartDate}
+                disabled={inputStartDate === undefined}
+              >
+                Start
+              </Button>
+            </div>
+          </div>
           <Line
             data={chartData}
             options={{
@@ -135,73 +349,37 @@ const StockSummaryComponent: React.FC = () => {
                 x: {
                   title: {
                     display: true,
-                    text: 'Time'
-                  }
+                    text: "Time",
+                  },
                 },
                 y: {
                   title: {
                     display: true,
-                    text: 'Price'
-                  }
-                }
+                    text: "Total Price",
+                  },
+                },
+              },
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    footer: (context) => {
+                      const dataset = context[0].dataset as any;
+                      const index = context[0].dataIndex;
+                      const symbols = dataset?.extraInfo[index];
+
+                      return `\nAssociated Symbols:\n${symbols.join("\n")}`;
+                    },
+                  },
+                },
               },
               animation: {
-                duration: 0 // Disable animation for better performance with real-time data
-              }
+                duration: 0, // Disable animation for better performance with real-time data
+              },
             }}
           />
-        </div>
-
-        <div>
-          <h1 className="text-xl font-bold text-blue-600 mb-4">
-            Status: {status}
-          </h1>
-          <div className="flex space-x-3 mb-4">
-            <Button variant="primary" onClick={reconnect} disabled={status === 'open'}>Connect</Button>
-            <Button variant="danger" onClick={disconnect} disabled={status !== 'open'}>Disconnect</Button>
-          </div>
-          <div className="flex mb-4">
-            <Input
-              variant="primary"
-              type="number"
-              placeholder="Data date origin (0 - 30 days ago)..."
-              disabled={status !== 'open'}
-              value={inputStartDate}
-              onChange={(e) => handleChange(e)}
-              className="flex-grow mr-2"
-              min={minValue}
-              max={maxValue}
-            />
-            <Button
-              variant="success"
-              onClick={handleStartDate}
-              disabled={status !== 'open'}
-            >
-              Track
-            </Button>
-          </div>
           <div>
-            <h3 className="text-lg font-bold text-blue-600 mb-2">
-              Recent Updates:
-            </h3>
-            <div className="max-h-40 overflow-y-auto">
-              {messages.slice(-5).map((msg, index) => {
-                if (msg.type === 'stock_summary') {
-                  return (
-                    <div key={index} className="chat-message text-black mb-1">
-                      <strong>{msToDatetime(msg.payload.event_timestamp)}:</strong> {msg.payload.total_price} {msg.payload.symbols}
-                    </div>
-                  );
-                } else if (msg.type === 'status') {
-                  return (
-                    <div key={index} className="status-message mb-1">
-                      {msg.message}
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </div>
+            <h1>Website Traffic</h1>
+            <Pie data={pieChartData} />
           </div>
         </div>
       </div>
