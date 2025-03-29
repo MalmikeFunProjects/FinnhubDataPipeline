@@ -1,5 +1,4 @@
 from enum import Enum
-import logging
 from cassandra.cqlengine.models import Model
 
 from cassandra_client.setup_client import SetupClient
@@ -9,8 +8,9 @@ from utils.utilities import Utilities
 from utils.funtion_timer import FunctionTimer
 import utils.settings as Utils
 import cassandra_client.models as models
+from utils.default_log_setting import DefaultLogger
 
-logging.basicConfig(level=logging.INFO)
+logger = DefaultLogger.get_err_logger("finnhub_consumer", log_to_console=True)
 
 
 # Enum to define the Kafka topics the consumer will interact with
@@ -69,7 +69,7 @@ class FinnhubConsumer:
         setup_client = SetupClient(config=self.cassandra_config)
         classModels = Utilities.get_classes_from_module(module=models, base_class=Model)
         # Ensure the table schema is synchronized before writing data
-        setup_client.setup_tables(classModels, logging=logging)
+        setup_client.setup_tables(classModels)
 
     def add_data_to_cassandra(self, topic_names: list[str]):
         with CassandraClient(self.cassandra_config) as cassandra_client:
@@ -78,12 +78,12 @@ class FinnhubConsumer:
                 self.function_timer.cancel_all_timers()
                 cassandra_client.clear_batch(add_batch_data=True)
             except Exception as e:
-                logging.error(f"Error processing stream: {e}")
+                logger.error(f"Error processing stream: {e}")
                 try:
                     self.function_timer.cancel_all_timers()
                     cassandra_client.clear_batch(add_batch_data=True)
                 except Exception as batch_e:
-                    logging.error(f"Failed to commit final batch: {batch_e}")
+                    logger.error(f"Failed to commit final batch: {batch_e}")
 
     def handle_response_data(self, topic_names: list[str], cassandra_client: CassandraClient):
         """
@@ -99,7 +99,7 @@ class FinnhubConsumer:
         latest_prices: dict[str, float] = {}  # Dictionary to store the latest prices of stocks
         if (not isinstance(topic_names, list) or len(topic_names) <= 0):
             raise Exception("Insert valid topic names")  # Ensure valid input for topic names
-        logging.info(f"STARTING: 0 records processed")
+        logger.info(f"STARTING: 0 records processed")
         # Consume messages from the Kafka topics
         for topic, key, value in self.kafka_consumer.consume_from_kafka(topic_names):
             try:
@@ -108,7 +108,7 @@ class FinnhubConsumer:
                 self.handle_company_symbols(cassandra_client, topic, key, value)
                 self.handle_stock_price_1s(cassandra_client, topic, key, value)
             except Exception as e:
-                logging.error(f"Error processing topic {topic}, key: {key}, value: {value}: {e}")
+                logger.error(f"Error processing topic {topic}, key: {key}, value: {value}: {e}")
                 raise e
 
     def handle_latest_prices(self, cassandra_client: CassandraClient, latest_prices: dict[str, float], topic: KafkaTopics, key: str, value: dict[str, any]):
@@ -117,10 +117,10 @@ class FinnhubConsumer:
             data = {"symbol": key, "last_price": value["LAST_PRICE"], "event_timestamp": value["EVENT_TIMESTAMP"]}
             try:
                 count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.LatestPrice, data=data, batch_duration=5)
-                logging.info(f"Batch size: {count}, Current topic: {topic}")
-                logging.info("-"*60)
+                logger.info(f"Batch size: {count}, Current topic: {topic}")
+                logger.info("-"*60)
             except Exception as e:
-                logging.error(f"Error adding {topic} to Cassandra: {e}")
+                logger.error(f"Error adding {topic} to Cassandra: {e}")
                 raise e
         return latest_prices
 
@@ -155,10 +155,10 @@ class FinnhubConsumer:
                 }
                 try:
                     count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockSummary, data=data, batch_duration=5)
-                    logging.info(f"Batch size: {count}, Current topic: {topic}")
-                    logging.info("-"*60)
+                    logger.info(f"Batch size: {count}, Current topic: {topic}")
+                    logger.info("-"*60)
                 except Exception as e:
-                    logging.error(f"Error adding {topic} to Cassandra: {e}")
+                    logger.error(f"Error adding {topic} to Cassandra: {e}")
                     raise e
 
     def handle_company_symbols(self, cassandra_client: CassandraClient, topic: KafkaTopics, key: str, value: dict[str, any]):
@@ -166,10 +166,10 @@ class FinnhubConsumer:
             if key is not None:
                 try:
                     count = cassandra_client.add_batch_data(batch_size=10, CustomModel=models.CompanySymbol, data={"symbol": key}, only_unique=True)
-                    logging.info(f"Batch size: {count}, Current topic: {topic}")
-                    logging.info("-"*60)
+                    logger.info(f"Batch size: {count}, Current topic: {topic}")
+                    logger.info("-"*60)
                 except Exception as e:
-                    logging.error(f"Error adding {topic} to Cassandra: {e}")
+                    logger.error(f"Error adding {topic} to Cassandra: {e}")
                     raise e
 
 
@@ -184,10 +184,10 @@ class FinnhubConsumer:
                 }
                 try:
                     count = cassandra_client.add_batch_data(batch_size=100, CustomModel=models.StockPrice1s, data=data, batch_duration=5)
-                    logging.info(f"Batch size: {count}, Current topic: {topic}")
-                    logging.info("-"*60)
+                    logger.info(f"Batch size: {count}, Current topic: {topic}")
+                    logger.info("-"*60)
                 except Exception as e:
-                    logging.error(f"Error adding {topic} to Cassandra: {e}")
+                    logger.error(f"Error adding {topic} to Cassandra: {e}")
                     raise e
 
 # Main execution of the script

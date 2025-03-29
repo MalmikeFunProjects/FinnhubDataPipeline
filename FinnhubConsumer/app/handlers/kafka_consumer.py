@@ -4,6 +4,10 @@ from confluent_kafka import DeserializingConsumer, KafkaError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("kafka_consumer", log_to_console=True)
+
 
 class KafkaConsumer:
     """
@@ -59,10 +63,10 @@ class KafkaConsumer:
                     continue
                 if msg.error():
                     if msg.error().code() == KafkaError._PARTITION_EOF:
-                        print('End of partition reached')
+                        logger.info('End of partition reached')
                         continue
                     else:
-                        print(f"Error: {msg.error()}")
+                        logger.error(f"Error: {msg.error()}")
                         break
                 topic = msg.topic()
                 key = msg.key()

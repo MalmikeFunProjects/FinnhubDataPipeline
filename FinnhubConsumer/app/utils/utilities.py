@@ -1,6 +1,9 @@
 import inspect
 import json
 import re
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("utilities", log_to_console=True)
 
 class Utilities:
     """
@@ -39,6 +42,6 @@ class Utilities:
             else:
                 return item.split(delimiter)
         except json.JSONDecodeError:
-            print(f"Error decoding JSON string: {item}")
+            logger.error(f"Error decoding JSON string: {item}")
         except Exception as e:
-            print(f"Error processing {item}: {e}")
+            logger.error(f"Error processing {item}: {e}")

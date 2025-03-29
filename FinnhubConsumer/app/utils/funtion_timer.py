@@ -2,6 +2,10 @@ import threading
 import time
 from .singleton import Singleton
 
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("function_timer", log_to_console=True)
+
 
 class TrackedTimer(threading.Timer):
     """Extended Timer class that tracks execution time and status."""
@@ -14,7 +18,7 @@ class TrackedTimer(threading.Timer):
 
     def start(self):
         """Start the timer and record start time."""
-        print(f"Starting timer: {self.name}")
+        logger.info(f"Starting timer: {self.name}")
         self.start_time = time.time()
         super().start()
 
@@ -22,7 +26,7 @@ class TrackedTimer(threading.Timer):
         """Execute the function and cleanup when done."""
         super().run()
         self.elapsed_time = time.time() - self.start_time if self.start_time else 0
-        print(f"Running timer: {self.name} at {self.elapsed_time:.2f}s")
+        logger.info(f"Running timer: {self.name} at {self.elapsed_time:.2f}s")
 
         # Get the singleton instance and remove this timer from running timers
         function_timer = FunctionTimer()
@@ -36,7 +40,7 @@ class TrackedTimer(threading.Timer):
         """Cancel the timer and cleanup."""
         elapsed = self.get_elapsed_time()
         super().cancel()
-        print(f"Cancelling timer: {self.name} at {elapsed:.2f}s")
+        logger.info(f"Cancelling timer: {self.name} at {elapsed:.2f}s")
         self.start_time = None
         self.elapsed_time = 0
 
@@ -79,7 +83,7 @@ class FunctionTimer(metaclass=Singleton):
             try:
                 del self.running_timers[timer_name]
             except KeyError as e:
-                print(f"KeyError in cancel_timer: {e}")
+                logger.error(f"KeyError in cancel_timer: {e}")
 
     def cancel_all_timers(self):
         """Cancel all running timers."""
