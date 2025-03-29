@@ -16,7 +16,8 @@ export type InputValueProp<T extends InputProps["type"]> = T extends "number"
 
 export interface InputProps {
   children?: React.ReactNode;
-  value?: InputValueProp<InputProps["type"]>; // Dynamically set value type
+  value?: InputValueProp<InputProps["type"]>; // Dynamically set value type 
+  defaultValue?: number; // Dynamically set value type
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
