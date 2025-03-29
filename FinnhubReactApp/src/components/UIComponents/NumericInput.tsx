@@ -5,6 +5,7 @@ import React, {
 } from "react";
 import { InputProps } from "@/types";
 import Input from "@/components/UIComponents/Input";
+import { type } from "os";
 
 // Numeric Input Hook
 const useNumericInput = (config: {
@@ -12,14 +13,15 @@ const useNumericInput = (config: {
   minValue?: number;
   maxValue?: number;
   defaultValue?: number;
+  onChange?: (value: number | undefined) => void;
 }) => {
-  const { initialValue, minValue, maxValue, defaultValue } = config;
+  const { initialValue, minValue, maxValue, defaultValue, onChange } = config;
   const [value, setValue] = useState<number | undefined>(initialValue);
 
   const constrainValue = useCallback(
     (inputValue: number | undefined) => {
-      if (inputValue === undefined) return defaultValue || undefined;
 
+      if (inputValue === undefined) return defaultValue || undefined;
       let constrainedValue = inputValue;
 
       if (minValue !== undefined) {
@@ -32,27 +34,39 @@ const useNumericInput = (config: {
 
       return constrainedValue;
     },
-    [minValue, maxValue]
+    [minValue, maxValue, defaultValue]
   );
 
   const safeSetValue = useCallback(
     (newValue: number | undefined) => {
       const constrainedValue = constrainValue(newValue);
       setValue(constrainedValue);
+      onChange?.(constrainedValue);
       return constrainedValue;
     },
-    [constrainValue]
+    [constrainValue, onChange]
   );
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Update local state when initialValue changes from props
+  useEffect(() => {
+    console.log(initialValue)
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const stringValue = event.target.value;
-    const numericValue = parseFloat(stringValue);
-    if (!isNaN(numericValue)) {
-      safeSetValue(numericValue);
-    } else if (stringValue === "") {
-      safeSetValue(defaultValue || undefined);
+
+    if (stringValue.trim() === "") {
+      safeSetValue(undefined);
+    } else {
+      const numericValue = parseFloat(stringValue);
+      if (!isNaN(numericValue)) {
+        safeSetValue(numericValue);
+      }else{
+        safeSetValue(undefined);
+      }
     }
-  };
+  }, [safeSetValue]);
 
   return {
     value,
@@ -70,36 +84,50 @@ const NumericInput: React.FC<InputProps> = ({
   onChange: propOnChange,
   ...props
 }) => {
-  const [currentEvent, setCurrentEvent] = useState<React.ChangeEvent<HTMLInputElement> | undefined>(undefined)
+  // Convert propValue to number if it's a string
+  // const numericPropValue = propValue !== undefined && propValue !== ""
+  //   ? typeof propValue === "number"
+  //     ? propValue
+  //     : Number(propValue)
+  //   : undefined;
+  const numericPropValue = () => {
+    const x = propValue !== undefined && propValue !== ""
+    ? typeof propValue === "number"
+      ? propValue
+      : Number(propValue)
+    : undefined;
+    return x;
+  }
+
   const { value, handleChange } = useNumericInput({
-    initialValue: typeof propValue === "number" ? propValue? propValue: defaultValue : undefined,
+    initialValue: numericPropValue(),
     minValue: min,
     maxValue: max,
-    defaultValue: defaultValue,
+    defaultValue: defaultValue !== undefined ? Number(defaultValue) : undefined,
+    onChange: (newValue) => {
+      if (propOnChange) {
+        // Create a synthetic event to match the expected interface
+        const syntheticEvent = {
+          target: {
+            value: newValue !== undefined ? String(newValue) : "",
+          },
+          // Add other event properties as needed
+          preventDefault: () => {},
+          stopPropagation: () => {},
+        } as React.ChangeEvent<HTMLInputElement>;
+        propOnChange(syntheticEvent);
+      }
+    }
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentEvent(e);
-    handleChange(e);
-  };
-
-  useEffect(() => {
-    if(currentEvent){
-      propOnChange?.({
-        ...currentEvent,
-        target: {
-          ...currentEvent.target,
-          value: String(value),
-        },
-      } as React.ChangeEvent<HTMLInputElement>);
-    }
-  }, [value]);
+  // The displayed value should come from the internal state
+  const displayValue = value !== undefined ? String(value) : "";
 
   return (
     <Input
       type="number"
-      value={propValue ?? ""}
-      onChange={handleInputChange}
+      value={displayValue}
+      onChange={handleChange}
       min={min}
       max={max}
       {...props}
