@@ -127,8 +127,6 @@ class FinnhubConsumer:
     def handle_stock_summary(self, cassandra_client: CassandraClient, latest_prices: dict[str, float], topic: KafkaTopics, key: str, value: dict[str, any]):
         if(topic == KafkaTopics.STOCK_SUMMARY.value):
             if value is not None:
-                # Remove any non-printable characters from the symbol list
-                symbols = {Utilities.remove_no_printable_characters(item) for item in value["SYMBOLS"]}
                 if "SYMBOL_PRICES" not in value:
                     symbol_prices = {}
                 else:
