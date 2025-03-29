@@ -5,7 +5,6 @@ import React, {
 } from "react";
 import { InputProps } from "@/types";
 import Input from "@/components/UIComponents/Input";
-import { type } from "os";
 
 // Numeric Input Hook
 const useNumericInput = (config: {
@@ -49,7 +48,6 @@ const useNumericInput = (config: {
 
   // Update local state when initialValue changes from props
   useEffect(() => {
-    console.log(initialValue)
     setValue(initialValue);
   }, [initialValue]);
 
@@ -84,20 +82,12 @@ const NumericInput: React.FC<InputProps> = ({
   onChange: propOnChange,
   ...props
 }) => {
-  // Convert propValue to number if it's a string
-  // const numericPropValue = propValue !== undefined && propValue !== ""
-  //   ? typeof propValue === "number"
-  //     ? propValue
-  //     : Number(propValue)
-  //   : undefined;
-  const numericPropValue = () => {
-    const x = propValue !== undefined && propValue !== ""
+  const numericPropValue = () => propValue !== undefined && propValue !== ""
     ? typeof propValue === "number"
       ? propValue
       : Number(propValue)
     : undefined;
-    return x;
-  }
+
 
   const { value, handleChange } = useNumericInput({
     initialValue: numericPropValue(),
