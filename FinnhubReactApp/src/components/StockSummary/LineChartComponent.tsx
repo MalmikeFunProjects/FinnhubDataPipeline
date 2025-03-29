@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,7 +8,7 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { msToDatetime } from "@/utils";
@@ -25,6 +25,11 @@ ChartJS.register(
   Legend
 );
 
+interface ExtraInfo {
+  stockSummary: StockSummary;
+  symbols: string[];
+}
+
 interface ChartData {
   labels: string[];
   datasets: {
@@ -33,19 +38,24 @@ interface ChartData {
     fill: boolean;
     borderColor: string;
     tension: number;
-    extraInfo: string[][];
+    extraInfo: ExtraInfo[];
   }[];
 }
 
 const LineChartComponent: React.FC = () => {
+  const chartRef = useRef(null);
   const {
     dataBufferRef,
     lastUpdateTimeRef,
     pauseChart,
     chartTimeWindow,
     chartUpdateInterval,
+    setStockSummary,
+    clearChart,
+    setClearChart,
     MAX_DATA_POINTS
   } = useStockWebSocketContext();
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   const [chartData, setChartData] = useState<ChartData>({
     labels: [],
@@ -66,7 +76,6 @@ const LineChartComponent: React.FC = () => {
     if (pauseChart) {
       return;
     }
-
     const buffer = dataBufferRef.current;
 
     if (buffer.length > 0) {
@@ -85,6 +94,7 @@ const LineChartComponent: React.FC = () => {
         // If we have data in the time window, update the chart
         // Take the last data point in the time window
         const latestData = dataInTimeWindow[dataInTimeWindow.length - 1];
+        setStockSummary(latestData);
         const date = msToDatetime(latestData.payload.event_timestamp);
 
         setChartData((prevData) => {
@@ -96,7 +106,10 @@ const LineChartComponent: React.FC = () => {
           // Add new data point
           newLabels.push(date);
           newDataPoints.push(latestData.payload.total_price);
-          newExtraInfo.push(Object.keys(latestData.payload.symbol_prices));
+          newExtraInfo.push({
+            stockSummary: latestData,
+            symbols: Object.keys(latestData.payload.symbol_prices)
+          });
 
           // Trim data to maintain maximum points
           const trimmedLabels = newLabels.slice(-MAX_DATA_POINTS);
@@ -122,6 +135,7 @@ const LineChartComponent: React.FC = () => {
         dataBufferRef.current = buffer.filter(
           (item) => item.payload.event_timestamp > lastUpdateTimeRef.current
         );
+
       } else {
         for (let i = 0; i < buffer.length; i++) {
           if (buffer[i].payload.event_timestamp > lastUpdateTimeRef.current) {
@@ -133,18 +147,67 @@ const LineChartComponent: React.FC = () => {
     }
   }, [pauseChart, dataBufferRef, lastUpdateTimeRef, chartTimeWindow, MAX_DATA_POINTS]);
 
+   // Effect to handle chart clearing
+   useEffect(() => {
+    if (clearChart) {
+      // Reset chart data state
+      setChartData({
+        labels: [],
+        datasets: [
+          {
+            label: "Total Price",
+            data: [],
+            fill: false,
+            borderColor: "rgb(75, 192, 192)",
+            tension: 0.1,
+            extraInfo: [],
+          },
+        ],
+      });
+      setClearChart(false);
+    }
+  }, [clearChart, setClearChart]);
+
   // Periodic update to ensure chart updates
   useEffect(() => {
-    const intervalId = setInterval(() => {
+    const currentIntervalId = setInterval(() => {
       updateChartWithBufferedData();
     }, chartUpdateInterval);
+    setIntervalId(currentIntervalId);
 
-    return () => clearInterval(intervalId);
-  }, [updateChartWithBufferedData, chartUpdateInterval]);
+    return () => clearInterval(currentIntervalId);
+  }, [clearChart, updateChartWithBufferedData, chartUpdateInterval]);
+
+  const handleClick = (event: any) => {
+    if(!pauseChart){
+      return;
+    }
+    const chart = chartRef.current as unknown as ChartJS;;
+    if (!chart) {
+      return;
+    }
+
+    const elements = chart.getElementsAtEventForMode(
+      event,
+      'point',
+      { intersect: true },
+      false
+    );
+
+    if (elements.length > 0) {
+      const index = elements[0].index;
+      const datasetIndex = elements[0].datasetIndex;
+      const data = chart.data as any;
+      setStockSummary(data?.datasets[datasetIndex]?.extraInfo[index]?.stockSummary || null);
+    } else {
+      console.log("Select a point on the chart.")
+    }
+  };
 
   return (
     <Line
       data={chartData}
+      ref={chartRef}
       options={{
         responsive: true,
         maintainAspectRatio: true,
@@ -168,7 +231,7 @@ const LineChartComponent: React.FC = () => {
               footer: (context) => {
                 const dataset = context[0].dataset as any;
                 const index = context[0].dataIndex;
-                const symbols = dataset?.extraInfo[index];
+                const symbols = dataset?.extraInfo[index]?.symbols;
 
                 return `\nAssociated Symbols:\n${symbols.join("\n")}`;
               },
@@ -179,6 +242,7 @@ const LineChartComponent: React.FC = () => {
           duration: 0, // Disable animation for better performance with real-time data
         },
       }}
+      onClick={handleClick}
     />
   );
 };
