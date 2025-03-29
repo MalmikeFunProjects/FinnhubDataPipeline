@@ -183,8 +183,10 @@ class ExecuteKsqlRequest:
             SELECT
                 EVENT_TIMESTAMP,
                 SUM(AVG_PRICE) AS TOTAL_PRICE,
-                COLLECT_LIST(SYMBOL) AS SYMBOLS,
-                COLLECT_LIST(AVG_PRICE) AS SYMBOL_PRICES
+                AS_MAP(
+                    COLLECT_LIST(SYMBOL),
+                    COLLECT_LIST(AVG_PRICE)
+                ) AS SYMBOL_PRICES
             FROM {stream_name}
             WINDOW TUMBLING (SIZE 1 SECONDS)
             GROUP BY EVENT_TIMESTAMP

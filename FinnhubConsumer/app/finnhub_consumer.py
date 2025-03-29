@@ -44,8 +44,7 @@ class FinnhubConsumer:
 
     def __compute_total(
         self,
-        current_symbols: list[str],
-        current_symbol_prices: list[float],
+        current_symbol_prices: dict[str, float],
         missing_symbols: list[str],
         latest_prices: dict[str, float],
         total: float
@@ -63,9 +62,8 @@ class FinnhubConsumer:
         """
         for symbol in missing_symbols:
             total += latest_prices[symbol]  # Add the price for each missing symbol to the total
-            current_symbols.append(symbol)  # Add the symbol to the list of current symbols
-            current_symbol_prices.append(latest_prices[symbol])  # Add the price to the list of current symbol prices
-        return {"total": total, "all_symbols": current_symbols, "all_symbol_prices": current_symbol_prices}
+            current_symbol_prices[symbol] = latest_prices[symbol]  # Add the symbol and price to the list of current symbol prices
+        return {"total": total, "all_symbol_prices": current_symbol_prices}
 
     def setup_cassandra_client(self):
         setup_client = SetupClient(config=self.cassandra_config)
@@ -131,23 +129,28 @@ class FinnhubConsumer:
             if value is not None:
                 # Remove any non-printable characters from the symbol list
                 symbols = {Utilities.remove_no_printable_characters(item) for item in value["SYMBOLS"]}
-                symbol_prices = value["SYMBOL_PRICES"] or []
+                if "SYMBOL_PRICES" not in value:
+                    symbol_prices = {}
+                else:
+                    symbol_prices = {
+                        Utilities.remove_no_printable_characters(item["key"]): item["value"]
+                        for item in value["SYMBOL_PRICES"]
+                        if "key" in item and "value" in item
+                    }
                 # Determine the missing symbols by comparing with existing latest prices
-                missing_symbols = list(latest_prices.keys() - symbols)
+                missing_symbols = list(latest_prices.keys() - symbol_prices.keys())
                 # Compute the total price by including the missing stock prices
                 computed_values = self.__compute_total(
-                    current_symbols = list(symbols),
                     current_symbol_prices = symbol_prices,
                     missing_symbols=missing_symbols,
                     latest_prices=latest_prices,
                     total=value["TOTAL_PRICE"]
                 )
-                total, all_symbols, all_symbol_prices = computed_values.values()
+                total, all_symbol_prices = computed_values.values()
 
                 data = {
                     "event_timestamp": key,
                     "total_price": total,
-                    "symbols": all_symbols,
                     "symbol_prices": all_symbol_prices
                 }
                 try:
