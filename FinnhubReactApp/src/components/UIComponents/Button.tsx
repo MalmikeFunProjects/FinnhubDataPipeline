@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ButtonProps } from '@/types';
 
 const Button: React.FC<ButtonProps> = ({
@@ -10,6 +10,7 @@ const Button: React.FC<ButtonProps> = ({
   type = 'button',
   onClick,
 }) => {
+  const [isClicking, setIsClicking] = useState(false);
   // Base classes
   const baseClasses = "font-bold rounded focus:outline-none focus:ring-2";
 
@@ -34,11 +35,34 @@ const Button: React.FC<ButtonProps> = ({
   // Disabled classes
   const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
 
+  // Click effect class
+  const clickEffectClass = isClicking ? "transform scale-95" : "";
+
+  const handleClick = (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) {
+      return;
+    }
+    setIsClicking(true);
+    if (onClick) {
+      onClick(event);
+    }
+  };
+
+  useEffect(() => {
+    if (isClicking) {
+      const timer = setTimeout(() => {
+        setIsClicking(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isClicking]);
+
+
   return (
     <button
       type={type}
-      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${widthClasses} ${disabledClasses}`}
-      onClick={onClick}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${widthClasses} ${disabledClasses} ${clickEffectClass}`}
+      onClick={handleClick}
       disabled={disabled}
     >
       {children}

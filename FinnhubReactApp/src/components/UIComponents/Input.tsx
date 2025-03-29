@@ -44,7 +44,6 @@ const Input: React.FC<InputProps> = ({
   const disabledClasses = disabled
     ? "opacity-50 cursor-not-allowed bg-gray-100"
     : "";
-  console.log(disabled)
   return (
     <input
       type={type}
