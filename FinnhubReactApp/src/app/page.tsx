@@ -1,7 +1,5 @@
 import React from 'react';
-import { WebSocketProvider } from '@/contexts/WebSocketContext';
-import ChatContainer from '@/components/ChatContainer';
-import StockSummaryComponent from '@/components/StockSummaryComponent'
+import StockSummaryComponent from '@/components/StockSummary/StockSummary'
 
 export default function Home() {
   return (
@@ -10,11 +8,6 @@ export default function Home() {
 }
 
 const App: React.FC = () => {
-  // return (
-  //   <WebSocketProvider url="ws://localhost:8000/stock_summary/ws">
-  //     <ChatContainer />
-  //   </WebSocketProvider>
-  // );
   return (
     <StockSummaryComponent />
   );
