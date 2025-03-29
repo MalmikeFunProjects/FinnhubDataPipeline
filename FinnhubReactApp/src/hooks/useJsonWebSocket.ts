@@ -1,7 +1,7 @@
 // Enhanced hook with JSON support
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from "react";
 
-type WebSocketStatus = 'connecting' | 'open' | 'closing' | 'closed' | 'error';
+type WebSocketStatus = "connecting" | "open" | "closing" | "closed" | "error";
 
 interface UseWebSocketOptions<T> {
   onOpen?: (event: Event) => void;
@@ -13,9 +13,13 @@ interface UseWebSocketOptions<T> {
   protocols?: string | string[];
 }
 
-export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebSocketOptions<T> = {}) {
-  const [status, setStatus] = useState<WebSocketStatus>('connecting');
+export function useJsonWebSocket<
+  T extends object = any,
+  U extends object = any
+>(url: string, options: UseWebSocketOptions<T> = {}) {
+  const [status, setStatus] = useState<WebSocketStatus>("connecting");
   const [messages, setMessages] = useState<T[]>([]);
+  const [connectionQuery, setConnectionQuery] = useState<String|undefined>(undefined);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectCountRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,18 +38,21 @@ export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebS
     if (socketRef.current) {
       socketRef.current.close();
     }
-
-    socketRef.current = new WebSocket(url, protocols);
-    setStatus('connecting');
+    let connectionUrl = url;
+    if(connectionQuery){
+      connectionUrl = `${url}?${connectionQuery}`
+    }
+    socketRef.current = new WebSocket(connectionUrl, protocols);
+    setStatus("connecting");
 
     socketRef.current.onopen = (event) => {
-      setStatus('open');
+      setStatus("open");
       reconnectCountRef.current = 0;
       if (onOpen) onOpen(event);
     };
 
     socketRef.current.onclose = (event) => {
-      setStatus('closed');
+      setStatus("closed");
 
       if (reconnectCountRef.current < reconnectAttempts) {
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -60,19 +67,28 @@ export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebS
     socketRef.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data) as T;
-        console.log(data)
         setMessages((prevMessages) => [...prevMessages, data]);
         if (onMessage) onMessage(data, event);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
     socketRef.current.onerror = (event) => {
-      setStatus('error');
+      setStatus("error");
       if (onError) onError(event);
     };
-  }, [url, protocols, onOpen, onClose, onMessage, onError, reconnectAttempts, reconnectInterval]);
+  }, [
+    url,
+    connectionQuery,
+    protocols,
+    onOpen,
+    onClose,
+    onMessage,
+    onError,
+    reconnectAttempts,
+    reconnectInterval,
+  ]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -82,13 +98,12 @@ export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebS
 
     if (socketRef.current) {
       socketRef.current.close();
-      setStatus('closing');
+      setStatus("closing");
     }
   }, []);
 
   const sendMessage = useCallback((message: U) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      console.log(message)
       socketRef.current.send(JSON.stringify(message));
       return true;
     }
@@ -97,11 +112,20 @@ export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebS
 
   useEffect(() => {
     connect();
-
     return () => {
       disconnect();
     };
   }, [connect, disconnect]);
+
+  const addConnectionQuery = useCallback((query: String) => {
+    setConnectionQuery(query);
+    connect();
+  }, [])
+
+  const clearConnectionQuery = useCallback(() => {
+    setConnectionQuery(undefined);
+    connect();
+  }, [])
 
   return {
     status,
@@ -109,5 +133,8 @@ export function useJsonWebSocket<T = any, U = any>(url: string, options: UseWebS
     sendMessage,
     disconnect,
     reconnect: connect,
+    addConnectionQuery,
+    clearConnectionQuery,
+    clearMessages: () => setMessages([]),
   };
 }
