@@ -11,13 +11,14 @@ const useNumericInput = (config: {
   initialValue?: number;
   minValue?: number;
   maxValue?: number;
+  defaultValue?: number;
 }) => {
-  const { initialValue, minValue, maxValue } = config;
+  const { initialValue, minValue, maxValue, defaultValue } = config;
   const [value, setValue] = useState<number | undefined>(initialValue);
 
   const constrainValue = useCallback(
     (inputValue: number | undefined) => {
-      if (inputValue === undefined) return undefined;
+      if (inputValue === undefined) return defaultValue || undefined;
 
       let constrainedValue = inputValue;
 
@@ -46,13 +47,10 @@ const useNumericInput = (config: {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const stringValue = event.target.value;
     const numericValue = parseFloat(stringValue);
-    console.log("Numeric Value:", numericValue);
-    console.log("String Value:", stringValue);
-    console.log(!isNaN(numericValue))
     if (!isNaN(numericValue)) {
       safeSetValue(numericValue);
     } else if (stringValue === "") {
-      safeSetValue(undefined);
+      safeSetValue(defaultValue || undefined);
     }
   };
 
@@ -67,15 +65,17 @@ const useNumericInput = (config: {
 const NumericInput: React.FC<InputProps> = ({
   min,
   max,
+  defaultValue,
   value: propValue,
   onChange: propOnChange,
   ...props
 }) => {
   const [currentEvent, setCurrentEvent] = useState<React.ChangeEvent<HTMLInputElement> | undefined>(undefined)
   const { value, handleChange } = useNumericInput({
-    initialValue: typeof propValue === "number" ? propValue : undefined,
+    initialValue: typeof propValue === "number" ? propValue? propValue: defaultValue : undefined,
     minValue: min,
     maxValue: max,
+    defaultValue: defaultValue,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
