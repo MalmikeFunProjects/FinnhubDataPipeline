@@ -1,25 +1,25 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-  } from 'chart.js';
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { useStockWebSocketContext } from "@/components/StockSummary/StockSummaryProvider";
 
 ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-  )
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface StackedBarChartData {
   labels: string[];
@@ -33,102 +33,99 @@ interface StackedBarChartData {
 }
 
 const StackedBarChartComponent: React.FC = () => {
-  const {
-    dataBufferRef,
-    lastUpdateTimeRef,
-    pauseChart,
-    chartTimeWindow,
-    chartUpdateInterval
-  } = useStockWebSocketContext();
+  const { stockSummary } = useStockWebSocketContext();
 
-  const [stackedBarChartData, setStackedBarChartData] = useState<StackedBarChartData>({
-    labels: [],
-    datasets: []
-  });
+  const [stackedBarChartData, setStackedBarChartData] =
+    useState<StackedBarChartData>({
+      labels: [],
+      datasets: [],
+    });
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const [totalPrice, setTotalPrice] = useState<string | null>(null);
 
   // Method to update stackedBar chart with buffered data
   const updateStackedBarChartWithBufferedData = useCallback(() => {
-    if (pauseChart) {
+    if (!stockSummary) {
+      setCurrentTime(null);
+      setTotalPrice(null);
+      setStackedBarChartData({
+        labels: [],
+        datasets: [],
+      });
       return;
+    } else {
+      const latestData = stockSummary;
+
+      const timestamp = new Date(
+        latestData.payload.event_timestamp
+      ).toLocaleTimeString();
+      setCurrentTime(timestamp);
+      setTotalPrice(latestData.payload.total_price.toFixed(2));
+
+      // Create a dataset for each symbol
+      const symbols = Object.keys(latestData.payload.symbol_prices);
+      const colors = [
+        "rgba(255, 99, 132, 0.6)",
+        "rgba(54, 162, 235, 0.6)",
+        "rgba(255, 206, 86, 0.6)",
+        "rgba(75, 192, 192, 0.6)",
+        "rgba(153, 102, 255, 0.6)",
+        "rgba(255, 159, 64, 0.6)",
+      ];
+
+      const borderColors = [
+        "rgba(255, 99, 132, 1)",
+        "rgba(54, 162, 235, 1)",
+        "rgba(255, 206, 86, 1)",
+        "rgba(75, 192, 192, 1)",
+        "rgba(153, 102, 255, 1)",
+        "rgba(255, 159, 64, 1)",
+      ];
+
+      const datasets = symbols.map((symbol, index) => {
+        return {
+          label: symbol,
+          data: [latestData.payload.symbol_prices[symbol]], // Array with single value for one timestamp
+          backgroundColor: colors[index % colors.length],
+          borderColor: borderColors[index % borderColors.length],
+          borderWidth: 1,
+        };
+      });
+
+      setStackedBarChartData({
+        labels: [timestamp], // Using timestamp as the category
+        datasets: datasets,
+      });
     }
-
-    const buffer = dataBufferRef.current;
-
-    if (buffer.length > 0) {
-      // Find the last update time if it exists, otherwise use the first message's timestamp
-      const referenceTime =
-        lastUpdateTimeRef.current || buffer[0].payload.event_timestamp;
-
-      // Filter data within the time window
-      const dataInTimeWindow = buffer.filter(
-        (item) =>
-          item.payload.event_timestamp >= referenceTime &&
-          item.payload.event_timestamp <= referenceTime + chartTimeWindow
-      );
-
-      if (dataInTimeWindow.length > 0) {
-        // Take the last data point in the time window
-        const latestData = dataInTimeWindow[dataInTimeWindow.length - 1];
-
-        if (!latestData.payload.symbol_prices) {
-          setStackedBarChartData({
-            labels: [],
-            datasets: []
-          });
-          return;
-        }
-
-        const timestamp = new Date(latestData.payload.event_timestamp).toLocaleTimeString();
-
-        // Create a dataset for each symbol
-        const symbols = Object.keys(latestData.payload.symbol_prices);
-        const colors = [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-          "rgba(255, 159, 64, 0.6)",
-        ];
-
-        const borderColors = [
-          "rgba(255, 99, 132, 1)",
-          "rgba(54, 162, 235, 1)",
-          "rgba(255, 206, 86, 1)",
-          "rgba(75, 192, 192, 1)",
-          "rgba(153, 102, 255, 1)",
-          "rgba(255, 159, 64, 1)",
-        ];
-
-        const datasets = symbols.map((symbol, index) => {
-          return {
-            label: symbol,
-            data: [latestData.payload.symbol_prices[symbol]], // Array with single value for one timestamp
-            backgroundColor: colors[index % colors.length],
-            borderColor: borderColors[index % borderColors.length],
-            borderWidth: 1
-          };
-        });
-
-        setStackedBarChartData({
-          labels: [timestamp], // Using timestamp as the category
-          datasets: datasets
-        });
-      }
-    }
-  }, [pauseChart, dataBufferRef, lastUpdateTimeRef, chartTimeWindow]);
+  }, [stockSummary]);
 
   // Periodic update to ensure stackedBar chart updates
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      updateStackedBarChartWithBufferedData();
-    }, chartUpdateInterval);
-
-    return () => clearInterval(intervalId);
-  }, [updateStackedBarChartWithBufferedData, chartUpdateInterval]);
+    updateStackedBarChartWithBufferedData();
+  }, [updateStackedBarChartWithBufferedData]);
 
   return (
-    <div className="h-64">
+    <div className="h-120">
+      <div className="flex justify-around p-4">
+        <p className="text-gray-600 text-l font-semibold mb-2">
+          {currentTime ? (
+            <>
+              Time: <span className="text-blue-600">{currentTime}</span>
+            </>
+          ) : (
+            ""
+          )}
+        </p>
+        <p className="text-gray-600 text-l font-semibold mb-2">
+          {totalPrice ? (
+            <>
+              Total Price: <span className="text-blue-600">{totalPrice}</span>
+            </>
+          ) : (
+            ""
+          )}
+        </p>
+      </div>
       <Bar
         data={stackedBarChartData}
         options={{
@@ -136,31 +133,31 @@ const StackedBarChartComponent: React.FC = () => {
           maintainAspectRatio: true,
           plugins: {
             legend: {
-              position: 'right',
+              position: "right",
             },
             tooltip: {
               callbacks: {
                 label: (context) => {
-                  const label = context.dataset.label || '';
+                  const label = context.dataset.label || "";
                   const value = context.raw as number;
                   return `${label}: ${value.toFixed(2)}`;
-                }
-              }
-            }
+                },
+              },
+            },
           },
           scales: {
             x: {
               stacked: true,
               title: {
                 display: true,
-                text: 'Time',
+                text: "Time",
               },
             },
             y: {
               stacked: true,
               title: {
                 display: true,
-                text: 'Prices',
+                text: "Prices",
               },
             },
           },

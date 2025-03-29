@@ -1,19 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend
-} from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
 import { Pie } from "react-chartjs-2";
 import { useStockWebSocketContext } from "@/components/StockSummary/StockSummaryProvider";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 interface PieChartData {
   labels: string[];
@@ -23,17 +14,12 @@ interface PieChartData {
     backgroundColor: string[];
     borderColor: string[];
     borderWidth: number;
+    extraData: Object;
   }[];
 }
 
 const PieChartComponent: React.FC = () => {
-  const {
-    dataBufferRef,
-    lastUpdateTimeRef,
-    pauseChart,
-    chartTimeWindow,
-    chartUpdateInterval
-  } = useStockWebSocketContext();
+  const { stockSummary } = useStockWebSocketContext();
 
   const [pieChartData, setPieChartData] = useState<PieChartData>({
     labels: [],
@@ -58,88 +44,76 @@ const PieChartComponent: React.FC = () => {
           "rgba(255, 159, 64, 1)",
         ],
         borderWidth: 1,
+        extraData: {},
       },
     ],
   });
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
 
   // Method to update pie chart with buffered data
   const updatePieChartWithBufferedData = useCallback(() => {
-    if (pauseChart) {
-      return;
-    }
+    if (!stockSummary) {
+      setPieChartData((prevData) => {
+        setCurrentTime(null);
+        return {
+          labels: [],
+          datasets: [
+            {
+              ...prevData.datasets[0],
+              data: [],
+            },
+          ],
+        };
+      });
+    } else {
+      const latestData = stockSummary;
 
-    const buffer = dataBufferRef.current;
+      setPieChartData((prevData) => {
+        const timestamp = new Date(
+          latestData.payload.event_timestamp
+        ).toLocaleTimeString();
+        setCurrentTime(timestamp);
 
-    if (buffer.length > 0) {
-      // Find the last update time if it exists, otherwise use the first message's timestamp
-      const referenceTime =
-        lastUpdateTimeRef.current || buffer[0].payload.event_timestamp;
+        const symbols = Object.keys(latestData.payload.symbol_prices);
+        const prices = Object.values(latestData.payload.symbol_prices);
 
-      // Filter data within the time window
-      const dataInTimeWindow = buffer.filter(
-        (item) =>
-          item.payload.event_timestamp >= referenceTime &&
-          item.payload.event_timestamp <= referenceTime + chartTimeWindow
-      );
-
-      if (dataInTimeWindow.length > 0) {
-        // Take the last data point in the time window
-        const latestData = dataInTimeWindow[dataInTimeWindow.length - 1];
-
-        setPieChartData((prevData) => {
-          if (!latestData.payload.symbol_prices) {
-            return {
-              labels: [],
-              datasets: [
-                {
-                  ...prevData.datasets[0],
-                  data: [],
-                },
-              ],
-            };
-          }
-
-          const symbols = Object.keys(latestData.payload.symbol_prices);
-          const prices = Object.values(latestData.payload.symbol_prices);
-
-          // Ensure we have enough colors for all symbols
-          const backgroundColor = symbols.map((_, index) => {
-            const baseColors = prevData.datasets[0].backgroundColor;
-            return baseColors[index % baseColors.length];
-          });
-
-          const borderColor = symbols.map((_, index) => {
-            const baseColors = prevData.datasets[0].borderColor;
-            return baseColors[index % baseColors.length];
-          });
-
-          return {
-            labels: symbols,
-            datasets: [
-              {
-                ...prevData.datasets[0],
-                data: prices,
-                backgroundColor,
-                borderColor,
-              },
-            ],
-          };
+        // Ensure we have enough colors for all symbols
+        const backgroundColor = symbols.map((_, index) => {
+          const baseColors = prevData.datasets[0].backgroundColor;
+          return baseColors[index % baseColors.length];
         });
-      }
+
+        const borderColor = symbols.map((_, index) => {
+          const baseColors = prevData.datasets[0].borderColor;
+          return baseColors[index % baseColors.length];
+        });
+
+        return {
+          labels: symbols,
+          datasets: [
+            {
+              ...prevData.datasets[0],
+              data: prices,
+              backgroundColor,
+              borderColor,
+              extraData: {
+                timestamp,
+              },
+            },
+          ],
+        };
+      });
     }
-  }, [pauseChart, dataBufferRef, lastUpdateTimeRef, chartTimeWindow]);
+  }, [stockSummary]);
 
   // Periodic update to ensure pie chart updates
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      updatePieChartWithBufferedData();
-    }, chartUpdateInterval);
-
-    return () => clearInterval(intervalId);
-  }, [updatePieChartWithBufferedData, chartUpdateInterval]);
+    updatePieChartWithBufferedData();
+  }, [updatePieChartWithBufferedData]);
 
   return (
-    <div className="h-64">
+    <div className="h-75">
+      <h1>{currentTime ? `Stock Prices ${currentTime}` : ""}</h1>
       <Pie
         data={pieChartData}
         options={{
@@ -147,18 +121,25 @@ const PieChartComponent: React.FC = () => {
           maintainAspectRatio: true,
           plugins: {
             legend: {
-              position: 'right',
+              position: "bottom",
             },
             tooltip: {
               callbacks: {
+                title: (context) => {
+                  const dataset = context[0]?.dataset as any;
+                  return dataset?.extraData?.timestamp || "";
+                },
                 label: (context) => {
-                  const label = context.label || '';
+                  const label = context.label || "";
                   const value = context.raw as number;
                   return `${label}: ${value.toFixed(2)}`;
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
+          layout: {
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
+          },
         }}
       />
     </div>
