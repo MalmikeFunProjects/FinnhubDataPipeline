@@ -97,8 +97,9 @@ export function useJsonWebSocket<
     }
 
     if (socketRef.current) {
-      socketRef.current.close();
       setStatus("closing");
+      socketRef.current.close();
+      setStatus("closed");
     }
   }, []);
 
