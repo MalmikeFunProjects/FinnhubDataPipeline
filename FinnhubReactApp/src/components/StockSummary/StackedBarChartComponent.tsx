@@ -41,6 +41,7 @@ const StackedBarChartComponent: React.FC = () => {
       datasets: [],
     });
   const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState<string | null>(null);
   const [totalPrice, setTotalPrice] = useState<string | null>(null);
 
   // Method to update stackedBar chart with buffered data
@@ -59,6 +60,8 @@ const StackedBarChartComponent: React.FC = () => {
       const timestamp = new Date(
         latestData.payload.event_timestamp
       ).toLocaleTimeString();
+      const date = new Date(latestData.payload.event_timestamp).toLocaleDateString();
+      setCurrentDate(date);
       setCurrentTime(timestamp);
       setTotalPrice(latestData.payload.total_price.toFixed(2));
 
@@ -107,6 +110,15 @@ const StackedBarChartComponent: React.FC = () => {
   return (
     <div className="h-120">
       <div className="flex justify-around p-4">
+        <p className="text-gray-600 text-l font-semibold mb-2">
+          {currentDate ? (
+            <>
+              Date: <span className="text-blue-600">{currentDate}</span>
+            </>
+          ) : (
+            ""
+          )}
+        </p>
         <p className="text-gray-600 text-l font-semibold mb-2">
           {currentTime ? (
             <>
