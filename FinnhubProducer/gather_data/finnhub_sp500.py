@@ -5,6 +5,10 @@ import asyncio
 from utils.settings import FINNHUB_API_KEY, SP500_COMPANY_PROFILES_FILE_PATH
 from utils.sp500_list import SP500_list
 from utils.utilities import Utilities
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("finnhub_sp500", log_to_console=True)
+
 
 class FinnhubSP500:
     """
@@ -76,17 +80,17 @@ class FinnhubSP500:
         try:
             company_profile_json = self.finnhub_client.company_profile2(symbol=row["Symbol"])
             company_profile_json["Symbol"] = row["Symbol"]
-            print(f"{row['Security']}: success")
+            logger.info(f"{row['Security']}: success")
 
         except finnhub.FinnhubAPIException as e:
             if e.status_code == 429 and trail <= 4:  # Rate limit exceeded
                 retry_after = 30 + (trail * 5)
-                print(f"Rate limit exceeded. Retry after {retry_after} seconds")
+                logger.warning(f"Rate limit exceeded. Retry after {retry_after} seconds")
                 time.sleep(retry_after)
                 company_profile_json = self.__process_sp500_row(row, trail + 1)  # Retry
-                print(f"{row['Security']}: {trail}")
+                logger.warning(f"{row['Security']}: {trail}")
             else:
-                print(f"Could not retrieve the company profile for {row['Security']} in {trail} trails")
+                logger.error(f"Could not retrieve the company profile for {row['Security']} in {trail} trails")
                 company_profile_json = None
         return company_profile_json
 

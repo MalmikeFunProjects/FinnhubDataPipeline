@@ -7,7 +7,9 @@ from confluent_kafka.serialization import StringSerializer, SerializationContext
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
 from utils.utilities import Utilities
-import traceback
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("kafka_producer", log_to_console=True)
 
 
 class KafkaProducer:
@@ -71,10 +73,10 @@ class KafkaProducer:
             return self.schema_registry_client.get_schema(
                 schema_id=versions.schema_id, subject_name=subject).schema_str
         except SchemaRegistryError as e:
-            print(f"Error retrieving schema from registry: {e}")
+            logger.error(f"Error retrieving schema from registry: {e}")
             raise
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.error(f"An unexpected error occurred: {e}")
             raise
 
     def publishToKafka(self, topic: str, key: str, record: dict[Any, Any]):
@@ -130,7 +132,7 @@ class KafkaProducer:
             except KeyboardInterrupt:
                 break  # Exit the loop if interrupted
             except Exception as err:
-                print(f"Exception while producing record - {single_record}: {err}")
+                logger.error(f"Exception while producing record - {single_record}: {err}")
         # Ensure that all messages are flushed (sent) before exiting
         self.producer.flush()
 
@@ -157,7 +159,6 @@ class KafkaProducer:
                 # Publish the record to Kafka
                 self.publishToKafka(topic=topic, key=key, record=record)
             except Exception as err:
-                traceback.print_exc()  # Print the stack trace for debugging
-                print(f"Exception while producing record - {record}: {err}")
+                logger.error(f"Exception while producing record - {record}: {err}")
             # Ensure that all messages are flushed (sent) before exiting
             self.producer.flush()

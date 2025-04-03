@@ -4,9 +4,11 @@ import pandas as pd
 from handlers.kafka_producer import KafkaProducer
 from utils.settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
 import websocket
-import traceback
 
 from utils.utilities import Utilities
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("finnhub_trades", log_to_console=True)
 
 class FinnhubTrades:
     """
@@ -55,7 +57,7 @@ class FinnhubTrades:
         try:
             data = dict(json.loads(message))
             if data["type"] == "ping":
-                print(f"Connection failed. Returning {data['type']}.")
+                logger.info(f"Connection failed. Returning {data['type']}.")
             else:
                 df = pd.DataFrame(data["data"])
                 Utilities.rename_df_columns(df, self.column_map)
@@ -65,13 +67,12 @@ class FinnhubTrades:
                 self.message_count += 1
 
             if self.max_messages and self.message_count >= self.max_messages:
-                print(f"Received {self.max_messages} messages. Closing connection.")
+                logger.info(f"Received {self.max_messages} messages. Closing connection.")
                 ws.close()
         except json.JSONDecodeError as e:
-            print(f"Error decoding JSON: {e}")
+            logger.error(f"Error decoding JSON: {e}")
         except KeyError as e:
-            traceback.print_exc()
-            print(f"Missing expected key: {e}")
+            logger.error(f"Missing expected key: {e}")
 
     def on_error(self, ws, error):
         """
@@ -81,7 +82,7 @@ class FinnhubTrades:
             ws (websocket.WebSocketApp): The WebSocket connection instance.
             error (Exception): The error encountered.
         """
-        traceback.print_exc()
+        logger.error(f"### WebSocket error ### {error}")
         raise error
 
     def on_close(self, ws, close_status_code, close_msg):
@@ -93,7 +94,7 @@ class FinnhubTrades:
             close_status_code (int): WebSocket close status code.
             close_msg (str): WebSocket close message.
         """
-        print(f"### WebSocket closed ### Code: {close_status_code}, Message: {close_msg}")
+        logger.info(f"### WebSocket closed ### Code: {close_status_code}, Message: {close_msg}")
 
     def on_open(self, ws):
         """

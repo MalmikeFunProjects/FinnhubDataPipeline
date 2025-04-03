@@ -1,6 +1,9 @@
 import os
 import pandas as pd
 from pathlib import Path
+from utils.default_log_setting import DefaultLogger
+
+logger = DefaultLogger.get_err_logger("utilities", log_to_console=True)
 
 # Utility class that provides helper functions for working with data, files, and schema
 class Utilities:
@@ -22,9 +25,9 @@ class Utilities:
             Prints success or failure of the message delivery to the console.
         """
         if err:
-            print(f"Delivery failed for record {msg.key()}: {err}")
+            logger.error(f"Delivery failed for record {msg.key()}: {err}")
             return
-        print(f'Record {msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
+        logger.info(f'Record {msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
 
     @staticmethod
     def rename_df_columns(df: pd.DataFrame, column_mapping: dict[str, str]) -> None:
@@ -59,11 +62,11 @@ class Utilities:
             # Write DataFrame to CSV, with "N/A" for missing values
             df.to_csv(file_path, na_rep="N/A", index=False)
         except FileNotFoundError:
-            print(f"Error: The directory {file_path} does not exist.")
+            logger.error(f"Error: The directory {file_path} does not exist.")
         except PermissionError:
-            print(f"Error: Permission denied when writing to {file_path}.")
+            logger.error(f"Error: Permission denied when writing to {file_path}.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
 
     @staticmethod
     def from_csv_to_df(file_path: str) -> pd.DataFrame:
@@ -85,11 +88,11 @@ class Utilities:
             # Load the CSV file into a DataFrame if the file exists
             return pd.read_csv(file_path) if file_path.exists() else None
         except FileNotFoundError:
-            print(f"Error: The directory {file_path} does not exist.")
+            logger.error(f"Error: The directory {file_path} does not exist.")
         except PermissionError:
-            print(f"Error: Permission denied when reading from {file_path}.")
+            logger.error(f"Error: Permission denied when reading from {file_path}.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
 
     @staticmethod
     def convert_nan_to_none(df: pd.DataFrame) -> pd.DataFrame:
