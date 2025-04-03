@@ -1,4 +1,3 @@
-import time
 import numpy as np
 
 from gather_data.finnhub_gather_data import FinnhubGatherData
@@ -86,7 +85,6 @@ class FinnhubProducer:
         # Create an instance of FinnhubTrades to start listening for trades data
         trades = FinnhubTrades(tickers=self.tickers, producer=producer, max_messages=None)
         trades.start_websocket()  # Start the WebSocket to receive and publish trades
-
 
 if __name__ == "__main__":
     """

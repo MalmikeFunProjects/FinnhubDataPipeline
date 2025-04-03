@@ -230,6 +230,8 @@ services:
     hostname: finnhub-producer  # Hostname for Finnhub producer
     ports:
       - "5004:5004"  # Exposes port for communication
+    volumes:
+      - ./FinnhubProducer/app:/app
     networks:
       - finnhub-network  # Connects to the finnhub-network
     deploy:
