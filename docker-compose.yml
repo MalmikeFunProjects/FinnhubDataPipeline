@@ -294,6 +294,37 @@ services:
       cassandra-init:
         condition: service_completed_successfully
 
+  web-ui:
+    build:
+      context: ./FinnhubReactApp
+      dockerfile: Dockerfile
+    container_name: web-ui
+    hostname: web-ui
+    networks:
+      - finnhub-network
+    ports:
+      - "3000"
+    environment:
+      - NODE_ENV=development # set to production when deploying
+    volumes:
+      - ./FinnhubReactApp:/app
+    command: npm run dev # set to npm run start when deploying
+    depends_on:
+      - nginx
+      - finnhub-api
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    hostname: nginx
+    networks:
+      - finnhub-network
+    ports:
+      - "80:80"
+    volumes:
+      - ./FinnhubReactApp/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./FinnhubReactApp/public:/usr/share/nginx/html/public:ro
+
 
 # Declare volumes for persisting data
 volumes:
