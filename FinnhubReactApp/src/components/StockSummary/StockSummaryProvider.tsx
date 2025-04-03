@@ -30,6 +30,7 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
   // Refs to collect incoming data points
   const dataBufferRef = useRef<StockSummary[]>([]);
   const lastUpdateTimeRef = useRef<number>(0);
+  const wsHost = process.env.FINNHUB_API_HOST || window.location.host;
 
   const {
     status,
@@ -39,7 +40,7 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
     clearMessages,
     addConnectionQuery,
   } = useJsonWebSocket<WebSocketStockSummary, WebSocketAction>(
-    "ws://localhost:8000/stock_summary/ws"
+    `ws://${wsHost}/stock_summary/ws`
   );
 
   // Handle start date submission
@@ -100,7 +101,7 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
         msg.payload.event_timestamp >= lastUpdateTimeRef.current
       ) {
         unprocessed_messages.push(msg as StockSummary);
-      } 
+      }
     });
     dataBufferRef.current = unprocessed_messages;
   }, [messages]);
