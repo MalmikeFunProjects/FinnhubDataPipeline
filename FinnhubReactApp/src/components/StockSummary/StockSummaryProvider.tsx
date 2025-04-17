@@ -38,6 +38,7 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
     sendMessage,
     disconnect,
     clearMessages,
+    reconnect,
     addConnectionQuery,
   } = useJsonWebSocket<WebSocketStockSummary, WebSocketAction>(
     `ws://${wsHost}/stock_summary/ws`
@@ -70,13 +71,20 @@ export const StockWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chil
   const togglePauseChart = useCallback(() => {
     setPauseChart((prev) => !prev);
     if (pauseChart) {
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].type === "stock_summary") {
-          const message = messages[i] as StockSummary;
-          const latest_timestamp = message?.payload?.event_timestamp;
-          if (latest_timestamp)
-            addConnectionQuery(`since_timestamp=${latest_timestamp}`);
-          break;
+      if(messages.length > 0){
+        let trigger = false;
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].type === "stock_summary") {
+            const message = messages[i] as StockSummary;
+            const latest_timestamp = message?.payload?.event_timestamp;
+            if (latest_timestamp)
+              trigger = true;
+              addConnectionQuery(`since_timestamp=${latest_timestamp}`);
+            break;
+          }
+        }
+        if(!trigger){
+          reconnect();
         }
       }
     } else {
