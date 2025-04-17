@@ -18,6 +18,7 @@ class Singleton(type):
                     instance.update(*args, **kwargs)
             return cls._instances[cls]
 
+    @classmethod
     def clear(cls):
         """
         Clear all singleton instances.

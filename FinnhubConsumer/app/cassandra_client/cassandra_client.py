@@ -7,8 +7,8 @@ from cassandra.cluster import Cluster, BatchStatement, NoHostAvailable, Authenti
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.query import BatchQuery, LWTException
 
-from utils.funtion_timer import FunctionTimer
-from utils.default_log_setting import DefaultLogger
+from app.utils.funtion_timer import FunctionTimer
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("cassandra_client", log_to_console=True)
 
@@ -58,52 +58,93 @@ class CassandraClient:
         self.close_connection()
 
     def connect_to_cassandra(self):
+        """
+        Establishes a connection to Cassandra with retry logic.
+        Raises ConnectionError if all connection attempts fail.
+        """
         attempts = 0
         while attempts < self.config.retry_attempts:
             try:
-                logger.info(f"Connecting to Cassandra at {self.config.hosts}: {self.config.port}. Attempt {attempts + 1}/{self.config.retry_attempts}...")
+                self._log_connection_attempt(attempts)
 
-                # Configure authenctication if credentials are provided
-                auth_provider = PlainTextAuthProvider(
-                    username=self.config.username,
-                    password=self.config.password
-                ) if self.config.username and self.config.password else None
+                auth_provider = self._create_auth_provider()
+                self.cluster = self._create_cluster(auth_provider)
+                self.session = self._connect_to_cluster()
 
-                # Create cluster
-                self.cluster = Cluster(
-                    contact_points=self.config.hosts,
-                    port=self.config.port,
-                    auth_provider=auth_provider,
-                    load_balancing_policy=RoundRobinPolicy(),
-                    default_retry_policy=RetryPolicy(),
-                    reconnection_policy=ExponentialReconnectionPolicy(base_delay=1, max_delay=60),
-                    protocol_version=self.config.protocol_version,
-                    control_connection_timeout=self.config.control_connection_timeout,
-                    connect_timeout=self.config.connect_timeout
-                )
-
-                self.session = self.cluster.connect()
-
-                if self.config.keyspace:
-                    self.session.set_keyspace(self.config.keyspace)
-
-                connection.register_connection(self.config.connection_name, session=self.session)
-                connection.set_default_connection(self.config.connection_name)
+                self._configure_keyspace()
+                self._register_connection()
 
                 logger.info("Connected to Cassandra")
                 return
 
-            except (NoHostAvailable, AuthenticationFailed)  as e:
+            except (NoHostAvailable, AuthenticationFailed) as e:
                 attempts += 1
-                logger.error(f"Connection attempt {attempts}   failed: {str(e)}")
+                self._handle_connection_error(attempts, e)
                 if attempts >= self.config.retry_attempts:
-                    logger.error(f"Failed to connect to Cassandra after {self.config.retry_attempts} attempts.")
+                    error_msg = f"Failed to connect to Cassandra after {self.config.retry_attempts} attempts."
+                    logger.error(error_msg)
                     raise ConnectionError(f"Failed to connect to Cassandra: {str(e)}.")
 
-                time.sleep(self.config.retry_delay)
+                self._wait_before_retry()
             except Exception as e:
                 logger.error(f"An unexpected error occurred: {str(e)}")
                 raise
+
+        # This line shouldn't be reached due to the raise in the except block,
+        # but it's here for clarity and as a safety net
+        raise ConnectionError("Failed to connect to Cassandra after all retry attempts.")
+
+    def _log_connection_attempt(self, attempts):
+        """Log the current connection attempt."""
+        logger.info(
+            f"Connecting to Cassandra at {self.config.hosts}: {self.config.port}. "
+            f"Attempt {attempts + 1}/{self.config.retry_attempts}..."
+        )
+
+    def _create_auth_provider(self):
+        """Create and return an auth provider if credentials are provided."""
+        if self.config.username and self.config.password:
+            return PlainTextAuthProvider(
+                username=self.config.username,
+                password=self.config.password
+            )
+        return None
+
+    def _create_cluster(self, auth_provider):
+        """Create and return a Cassandra cluster instance."""
+        return Cluster(
+            contact_points=self.config.hosts,
+            port=self.config.port,
+            auth_provider=auth_provider,
+            load_balancing_policy=RoundRobinPolicy(),
+            default_retry_policy=RetryPolicy(),
+            reconnection_policy=ExponentialReconnectionPolicy(base_delay=1, max_delay=60),
+            protocol_version=self.config.protocol_version,
+            control_connection_timeout=self.config.control_connection_timeout,
+            connect_timeout=self.config.connect_timeout
+        )
+
+    def _connect_to_cluster(self):
+        """Connect to the cluster and return the session."""
+        return self.cluster.connect()
+
+    def _configure_keyspace(self):
+        """Set the keyspace if specified in the configuration."""
+        if self.config.keyspace:
+            self.session.set_keyspace(self.config.keyspace)
+
+    def _register_connection(self):
+        """Register and set as default connection in the CQL engine."""
+        connection.register_connection(self.config.connection_name, session=self.session)
+        connection.set_default_connection(self.config.connection_name)
+
+    def _handle_connection_error(self, attempts, exception):
+        """Handle connection errors by logging the error."""
+        logger.error(f"Connection attempt {attempts} failed: {str(exception)}")
+
+    def _wait_before_retry(self):
+        """Wait for the configured delay before retrying."""
+        time.sleep(self.config.retry_delay)
 
     def close_connection(self):
         if self.session:

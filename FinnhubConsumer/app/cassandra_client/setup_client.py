@@ -1,8 +1,8 @@
 
-from .cassandra_client import CassandraConfig, CassandraClient
+from app.cassandra_client.cassandra_client import CassandraConfig, CassandraClient
 from cassandra.cqlengine.models import Model
 
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("setup_client", log_to_console=True)
 

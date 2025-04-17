@@ -1,14 +1,14 @@
 from enum import Enum
 from cassandra.cqlengine.models import Model
 
-from cassandra_client.setup_client import SetupClient
-from cassandra_client.cassandra_client import CassandraConfig, CassandraClient
-from handlers.kafka_consumer import KafkaConsumer
-from utils.utilities import Utilities
-from utils.funtion_timer import FunctionTimer
-import utils.settings as Utils
-import cassandra_client.models as models
-from utils.default_log_setting import DefaultLogger
+from app.cassandra_client.setup_client import SetupClient
+from app.cassandra_client.cassandra_client import CassandraConfig, CassandraClient
+from app.handlers.kafka_consumer import KafkaConsumer
+from app.utils.utilities import Utilities
+from app.utils.funtion_timer import FunctionTimer
+from app.utils.default_log_setting import DefaultLogger
+import app.utils.settings as Utils
+import app.cassandra_client.models as models
 
 logger = DefaultLogger.get_err_logger("finnhub_consumer", log_to_console=True)
 
@@ -27,7 +27,7 @@ class FinnhubConsumer:
         """
         Initializes the FinnhubConsumer object.
         Sets up an empty dictionary for latest stock prices and
-        creates a Kafka consumer instance using configurations from Utils.
+        creates a Kafka consumer instance using configurations from app.utils.
         """
         # Kafka consumer properties (URLs and bootstrap servers from settings)
         props = {

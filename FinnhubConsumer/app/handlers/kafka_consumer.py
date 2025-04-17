@@ -4,7 +4,7 @@ from confluent_kafka import DeserializingConsumer, KafkaError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("kafka_consumer", log_to_console=True)
 

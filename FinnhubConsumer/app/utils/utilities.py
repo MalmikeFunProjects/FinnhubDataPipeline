@@ -1,7 +1,7 @@
 import inspect
 import json
 import re
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("utilities", log_to_console=True)
 

@@ -2,7 +2,7 @@ import threading
 import time
 from .singleton import Singleton
 
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("function_timer", log_to_console=True)
 
