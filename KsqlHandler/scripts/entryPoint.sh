@@ -7,11 +7,12 @@ eval "$(conda shell.bash hook)"
 # Activate the Conda environment
 # Activates the Conda environment named 'finnhubDPL', which should have all necessary dependencies installed.
 conda activate finnhubDPL
+cp app/sample.env app/.env
 
 # Run the Python script and capture the exit code
 # Executes the main Python script (main.py), which is the entry point for the application.
 # The exit code of the script (i.e., success or failure) is captured in the EXIT_CODE variable.
-python main.py
+python -u -m app.main
 EXIT_CODE=$?
 
 # Log success or failure

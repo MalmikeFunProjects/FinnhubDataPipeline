@@ -3,7 +3,7 @@ from httpx import Response
 import requests
 import json
 
-import utils.settings as UTILS
+import app.utils.settings as UTILS
 
 class KsqlHandlerMethods:
     """

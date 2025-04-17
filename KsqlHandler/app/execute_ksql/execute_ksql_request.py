@@ -1,6 +1,6 @@
-from execute_ksql.make_ksql_request import MakeKsqlRequest
-from utils.enums import StorageType
-import utils.settings as UTILS
+from app.execute_ksql.make_ksql_request import MakeKsqlRequest
+from app.utils.enums import StorageType
+import app.utils.settings as UTILS
 
 class ExecuteKsqlRequest:
     """

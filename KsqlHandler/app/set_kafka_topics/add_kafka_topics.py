@@ -1,6 +1,6 @@
-import utils.settings as UTILS
-from utils.utilities import Utilities
-from set_kafka_topics.set_kafka_topics import SetUpKafkaTopics
+import app.utils.settings as UTILS
+from app.utils.utilities import Utilities
+from app.set_kafka_topics.set_kafka_topics import SetUpKafkaTopics
 
 class AddKafkaTopics:
     """
@@ -30,7 +30,7 @@ class AddKafkaTopics:
 
         try:
             setUpKafkaTopics.register_topic(
-                topic_names=topics.keys(),
+                topic_names=list(topics.keys()),
                 partitions=int(UTILS.KAFKA_PARTITIONS),
                 replication_factor=int(UTILS.KAFKA_REPLICATION_FACTOR)
             )

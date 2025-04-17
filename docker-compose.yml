@@ -211,6 +211,8 @@ services:
         delay: 5s
         max_attempts: 3
         window: 60s
+    volumes:
+      - ./KsqlHandler/app:/app
     environment:
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Connects to Kafka broker
     depends_on:
@@ -273,6 +275,8 @@ services:
         condition: service_completed_successfully
       ksql-handler:
         condition: service_healthy  # Waits for ksql handler to be healthy
+      cassandra:
+        condition: service_healthy  # Waits for Cassandra to be healthy
 
   finnhub-api:
     build:
@@ -295,6 +299,8 @@ services:
     depends_on:
       cassandra-init:
         condition: service_completed_successfully
+      cassandra:
+        condition: service_healthy
 
   web-ui:
     build:
@@ -312,7 +318,6 @@ services:
       - ./FinnhubReactApp:/app
     command: npm run dev # set to npm run start when deploying
     depends_on:
-      - nginx
       - finnhub-api
 
   nginx:
@@ -323,6 +328,8 @@ services:
       - finnhub-network
     ports:
       - "80:80"
+    depends_on:
+      - web-ui
     volumes:
       - ./FinnhubReactApp/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./FinnhubReactApp/public:/usr/share/nginx/html/public:ro

@@ -1,4 +1,4 @@
-from confluent_kafka import KafkaError
+from confluent_kafka.cimpl import KafkaException
 from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka.schema_registry import SchemaRegistryClient, Schema
 from confluent_kafka.schema_registry.error import SchemaRegistryError
@@ -98,13 +98,7 @@ class SetUpKafkaTopics:
                     try:
                         future.result()
                         print(f"Topic {topic} created successfully.")
-                    except KafkaError as e:
+                    except KafkaException as e:
                         print(f"Failed to create topic {topic}: {e}")
             except Exception as e:
                 raise e  # Raise any errors encountered during topic creation
-
-    def close_admin_client(self):
-        """
-        Closes the Kafka admin client to release resources.
-        """
-        self.admin_client.close()

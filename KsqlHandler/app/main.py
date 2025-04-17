@@ -1,8 +1,8 @@
-from execute_ksql.execute_ksql_request import ExecuteKsqlRequest
-from execute_ksql.make_ksql_request import MakeKsqlRequest
-from set_kafka_topics.add_kafka_topics import AddKafkaTopics
-from utils.enums import StorageType
-import utils.settings as UTILS
+from app.execute_ksql.execute_ksql_request import ExecuteKsqlRequest
+from app.execute_ksql.make_ksql_request import MakeKsqlRequest
+from app.set_kafka_topics.add_kafka_topics import AddKafkaTopics
+from app.utils.enums import StorageType
+import app.utils.settings as UTILS
 
 class KsqlHandler:
     """

@@ -1,6 +1,6 @@
 
-from execute_ksql.ksql_handler_methods import KsqlHandlerMethods
-from utils.enums import StorageType
+from app.execute_ksql.ksql_handler_methods import KsqlHandlerMethods
+from app.utils.enums import StorageType
 
 
 class MakeKsqlRequest:
