@@ -3,16 +3,16 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-
-from routers.stock_summary_router import stock_summary_router
-from routers.latest_price_router import latest_price_router
-from routers.company_symbols_router import company_symbol_router
-from routers.stock_price_1s_router import stock_price_1s_router
-from routers.web_sockets_stat_router import web_socket_stats_router
 from contextlib import asynccontextmanager
-from utils.default_log_setting import DefaultLogger
-from routers.ConnectionManager import get_connection_manager
-from middleware.log_requests import LogRequestMiddleware
+
+from app.routers.stock_summary_router import stock_summary_router
+from app.routers.latest_price_router import latest_price_router
+from app.routers.company_symbols_router import company_symbol_router
+from app.routers.stock_price_1s_router import stock_price_1s_router
+from app.routers.web_sockets_stat_router import web_socket_stats_router
+from app.utils.default_log_setting import DefaultLogger
+from app.routers.ConnectionManager import get_connection_manager
+from app.middleware.log_requests import LogRequestMiddleware
 
 # Force stdout to be unbuffered
 sys.stdout.reconfigure(line_buffering=True)
@@ -74,4 +74,4 @@ app.include_router(stock_price_1s_router)
 # Main function to run the application
 if __name__ == "__main__":
     logger.info("Starting uvicorn server")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, workers=1)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, workers=1)

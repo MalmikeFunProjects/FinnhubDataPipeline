@@ -3,14 +3,12 @@
 # Activate the Poetry virtual environment
 source .venv/bin/activate
 
-cd /app
-
-cp sample.env .env
+cp app/sample.env app/.env
 
 # # Run FastAPI with host 0.0.0.0
 # # Capture the exit code of the Python script to determine if it ran successfully or failed
 # uvicorn main:app --host 0.0.0.0 --port 8000
-python main.py
+python -u -m app.main
 EXIT_CODE=$?
 
 # # Check the exit code of the Python script

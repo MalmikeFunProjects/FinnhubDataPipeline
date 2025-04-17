@@ -1,11 +1,11 @@
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
-from utils.CassandraMapper import CassandraMapper
-from database.cassandra_client import CassandraClient
-from database.cassandra_config import get_cassandra_config
-from database.models import StockSummary as StockSummaryModel
-from utils.utilities import Utilities, TimeReturnType
-from utils.default_log_setting import DefaultLogger
+from app.utils.CassandraMapper import CassandraMapper
+from app.database.cassandra_client import CassandraClient
+from app.database.cassandra_config import get_cassandra_config
+from app.database.models import StockSummary as StockSummaryModel
+from app.utils.utilities import Utilities, TimeReturnType
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("stock_summary_service", log_to_console=True)
 
@@ -86,7 +86,7 @@ class StockSummaryService():
         # Extract basic filters
         start_time_filter = filter_params.pop("start_timestamp_filter", None)
         end_time_filter = filter_params.pop("end_timestamp_filter", None)
-
+        
         return client.query_time_partitioned_data(
             model_class=StockSummaryModel,
             partition_field="partition_date",

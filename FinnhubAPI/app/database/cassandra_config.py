@@ -1,5 +1,5 @@
-from database.cassandra_client import CassandraConfig
-import utils.settings as Utils
+from app.database.cassandra_client import CassandraConfig
+import app.utils.settings as Utils
 
 def get_cassandra_config():
     return CassandraConfig(

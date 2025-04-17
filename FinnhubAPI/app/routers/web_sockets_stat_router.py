@@ -1,12 +1,10 @@
 from typing import Dict
 from fastapi import APIRouter, Depends
 
-from routers.ConnectionManager import get_connection_manager, ConnectionManager
-
-from utils.default_log_setting import DefaultLogger
+from app.routers.ConnectionManager import get_connection_manager, ConnectionManager
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("fastapi_app", log_to_console=True)
-
 
 class WebsocketStats():
     def __init__(self):
@@ -21,7 +19,7 @@ class WebsocketStats():
         # Ensure the manager is a ConnectionManager instance
         if not isinstance(manager, ConnectionManager):
             manager = get_connection_manager()
-            
+
         return {
             "total_connections": manager.get_connection_count(),
             "rooms": {

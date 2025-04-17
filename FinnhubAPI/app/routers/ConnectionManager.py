@@ -9,7 +9,7 @@ from typing import Dict, Set, Any, Optional, List, Union
 import uuid
 from contextlib import asynccontextmanager
 
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 # Create a logger for the connection manager
 logger = DefaultLogger.get_err_logger(name="connection_manager", log_to_console=True)

@@ -5,12 +5,10 @@ from fastapi import APIRouter, HTTPException, Query, WebSocketDisconnect, WebSoc
 from fastapi import WebSocket
 from typing import Dict, List, Optional
 
-from routers.ConnectionManager import ConnectionManager, get_connection_manager
-from routers.models import StockSummary
-from services.stock_summary_service import StockSummaryService
-
-from utils.default_log_setting import DefaultLogger
-
+from app.routers.ConnectionManager import ConnectionManager, get_connection_manager
+from app.routers.models import StockSummary
+from app.services.stock_summary_service import StockSummaryService
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("stock_summary_router", log_to_console=True)
 
@@ -260,16 +258,20 @@ class StockSummaryRouter():
         self,
         start_days_ago: Optional[int] = None,
         since_timestamp: Optional[int] = None,
+        end_days_ago: Optional[int] = None,
+        end_timestamp: Optional[int] = None,
         batch_size: int = 100
     ) -> List[StockSummary]:
         """Fetch stock summary from the service layer"""
         try:
-            if start_days_ago is not None and since_timestamp is None and start_days_ago == 0:
+            if (start_days_ago is None or start_days_ago == 0) and since_timestamp is None:
                 since_timestamp = datetime.now().timestamp() * 1000
 
             return self.service.get_stock_summary(
                 start_days_ago=start_days_ago,
                 since_timestamp=since_timestamp,
+                end_days_ago=end_days_ago,
+                end_timestamp=end_timestamp,
                 batch_size=batch_size
             )
         except Exception as e:

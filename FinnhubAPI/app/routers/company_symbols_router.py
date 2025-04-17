@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from routers.models import CompanySymbol
-from services.company_symbol_service import CompanySymbolService
-from utils.default_log_setting import DefaultLogger
+from app.routers.models import CompanySymbol
+from app.services.company_symbol_service import CompanySymbolService
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("company_symbol_router", log_to_console=True)
 

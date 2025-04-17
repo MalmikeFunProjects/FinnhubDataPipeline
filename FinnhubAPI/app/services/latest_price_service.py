@@ -1,11 +1,11 @@
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
-from database.cassandra_client import CassandraClient
-from database.cassandra_config import get_cassandra_config
-from database.models import LatestPrice as LatestPriceModel
-from utils.CassandraMapper import CassandraMapper
-from utils.utilities import Utilities, TimeReturnType
-from utils.default_log_setting import DefaultLogger
+from app.database.cassandra_client import CassandraClient
+from app.database.cassandra_config import get_cassandra_config
+from app.database.models import LatestPrice as LatestPriceModel
+from app.utils.CassandraMapper import CassandraMapper
+from app.utils.utilities import Utilities, TimeReturnType
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("latest_price_service", log_to_console=True)
 

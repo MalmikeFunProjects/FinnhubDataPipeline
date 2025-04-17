@@ -106,7 +106,7 @@ class Utilities:
             ValueError: If date_format is used with a non-string return_type.
         """
         original_date = original_date or datetime.now()
-        if isinstance(original_date, date):
+        if type(original_date) is date:
             original_date = datetime.combine(original_date, time.min)
         elif isinstance(original_date, int) or isinstance(original_date, float):
             original_date = datetime.fromtimestamp(original_date / (1000 if original_date > 1e12 else 1))
@@ -124,10 +124,7 @@ class Utilities:
 
         # Format if return_type is string-based
         if return_type == TimeReturnType.STR_FORMAT:
-            try:
-                return adjusted_datetime.strftime(date_format)
-            except ValueError as e:
-                raise ValueError(f"Invalid date format: {date_format}. Error: {e}")
+            return adjusted_datetime.strftime(date_format)
 
         # Mapping of return types to corresponding values
         return_type_map = {

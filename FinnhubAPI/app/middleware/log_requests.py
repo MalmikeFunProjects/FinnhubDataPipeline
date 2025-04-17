@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from utils.Logger import Logger
+from app.utils.Logger import Logger
 import time
 
 class LogRequestMiddleware:

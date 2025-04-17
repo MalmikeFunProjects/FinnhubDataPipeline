@@ -4,10 +4,10 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, WebSocketDisconnect, Query, WebSocket
 from typing import Dict, List, Optional
 
-from routers.ConnectionManager import ConnectionManager, get_connection_manager
-from routers.models import LatestPrice
-from services.latest_price_service import LatestPriceService
-from utils.default_log_setting import DefaultLogger
+from app.routers.ConnectionManager import ConnectionManager, get_connection_manager
+from app.routers.models import LatestPrice
+from app.services.latest_price_service import LatestPriceService
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("latest_price_router", log_to_console=True)
 
@@ -66,7 +66,6 @@ class LatestPriceRouter():
         # Accept and manage the connection
         async with manager.connection_context(websocket, connection_id, metadata) as client_id:
             logger.info(f"WebSocket connection started: {client_id} (latest_price)")
-
             try:
                 # Start streaming task
                 self.active_tasks[client_id] = asyncio.create_task(
@@ -77,7 +76,6 @@ class LatestPriceRouter():
                         since_timestamp=since_timestamp
                     )
                 )
-
                 # Handle client messages
                 while True:
                     data = await websocket.receive_text()
@@ -178,7 +176,6 @@ class LatestPriceRouter():
     ):
         """Stream latest price data to the client"""
         logger.info(f"Starting price stream for client {client_id}, symbol={symbol}, start_days_ago={start_days_ago}")
-
         try:
             # Ensure the manager is a ConnectionManager instance
             if not isinstance(manager, ConnectionManager):

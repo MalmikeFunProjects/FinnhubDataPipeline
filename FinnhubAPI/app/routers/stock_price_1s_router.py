@@ -4,10 +4,10 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, WebSocketDisconnect, Query, WebSocket
 from typing import Dict, List, Optional
 
-from routers.ConnectionManager import ConnectionManager, get_connection_manager
-from routers.models import StockPrice1s
-from services.stock_price_1s_service import StockPrice1service
-from utils.default_log_setting import DefaultLogger
+from app.routers.ConnectionManager import ConnectionManager, get_connection_manager
+from app.routers.models import StockPrice1s
+from app.services.stock_price_1s_service import StockPrice1service
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("stock_price_1s_router", log_to_console=True)
 

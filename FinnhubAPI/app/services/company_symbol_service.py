@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from utils.CassandraMapper import CassandraMapper
-from database.cassandra_client import CassandraClient
-from database.cassandra_config import get_cassandra_config
-from database.models import CompanySymbol as CompanySymbolModel
-from utils.default_log_setting import DefaultLogger
+from app.utils.CassandraMapper import CassandraMapper
+from app.database.cassandra_client import CassandraClient
+from app.database.cassandra_config import get_cassandra_config
+from app.database.models import CompanySymbol as CompanySymbolModel
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("company_symbol_service", log_to_console=True)
 

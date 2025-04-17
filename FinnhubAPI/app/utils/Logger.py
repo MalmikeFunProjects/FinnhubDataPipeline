@@ -1,6 +1,4 @@
 """
-robust_logger.py - A comprehensive logging module for Python applications
-
 This module provides a flexible and feature-rich logging system with:
 - Multiple output destinations (console, file, rotating files)
 - Customizable formatting
@@ -233,6 +231,10 @@ class Logger:
             level,
             self._format_with_context(f"Task '{task_name}' completed in {duration:.4f} seconds")
         )
+
+    def log(self, level, message, *args, **kwargs):
+        """Log a message with the specified level."""
+        self.logger.log(level, self._format_with_context(message), *args, **kwargs)
 
     # Context managers
     def context_manager(self, **context_data):
