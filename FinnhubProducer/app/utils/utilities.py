@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from pathlib import Path
-from utils.default_log_setting import DefaultLogger
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("utilities", log_to_console=True)
 
@@ -105,5 +105,5 @@ class Utilities:
         Returns:
             pd.DataFrame: A new DataFrame with NaN values replaced by None.
         """
-        # Replace NaN values with None
-        return df.where(pd.notna(df), None)  # NaN values are replaced by None
+        df_objects = df.astype(object)
+        return df_objects.where(pd.notna(df_objects), None)

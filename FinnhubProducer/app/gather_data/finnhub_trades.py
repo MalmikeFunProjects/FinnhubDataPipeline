@@ -1,12 +1,11 @@
 import json
 from numpy import ndarray
 import pandas as pd
-from handlers.kafka_producer import KafkaProducer
-from utils.settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
 import websocket
-
-from utils.utilities import Utilities
-from utils.default_log_setting import DefaultLogger
+from app.handlers.kafka_producer import KafkaProducer
+from app.utils.settings import FINNHUB_API_KEY, KAFKA_TOPIC_TRADES
+from app.utils.utilities import Utilities
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("finnhub_trades", log_to_console=True)
 

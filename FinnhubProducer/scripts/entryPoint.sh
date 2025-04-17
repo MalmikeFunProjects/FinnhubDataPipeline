@@ -4,20 +4,18 @@
 # This command ensures that the Conda environment is correctly initialized and ready for use.
 eval "$(conda shell.bash hook)"
 
-cd /app
-
 # Activate the Conda environment
 # Activates the Conda environment named 'finnhubDPL', setting up the appropriate environment for running the script.
 conda activate finnhubDPL
-cp sample.env .env
+cp app/sample.env app/.env
 
 # Replace the placeholder {{finnhub-api-key}} in the .env file with the actual value of FINNHUB_API_KEY environment variable
-sed -i 's/{{finnhub-api-key}}/$FINNHUB_API_KEY/g' .env
+sed -i 's/{{finnhub-api-key}}/$FINNHUB_API_KEY/g' app/.env
 
 # Run the Python script and capture the exit code
 # Executes the Python script 'finnhub_producer.py' in the activated environment.
 # The exit code of the script is captured to determine whether it ran successfully or failed.
-python -u finnhub_producer.py
+python -u -m app.finnhub_producer
 EXIT_CODE=$?
 
 # Log success or failure

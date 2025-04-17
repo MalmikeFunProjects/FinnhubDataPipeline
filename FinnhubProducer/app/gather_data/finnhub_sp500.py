@@ -2,10 +2,10 @@ import finnhub
 import pandas as pd
 import time
 import asyncio
-from utils.settings import FINNHUB_API_KEY, SP500_COMPANY_PROFILES_FILE_PATH
-from utils.sp500_list import SP500_list
-from utils.utilities import Utilities
-from utils.default_log_setting import DefaultLogger
+from app.utils.settings import FINNHUB_API_KEY, SP500_COMPANY_PROFILES_FILE_PATH
+from app.utils.sp500_list import SP500_list
+from app.utils.utilities import Utilities
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("finnhub_sp500", log_to_console=True)
 

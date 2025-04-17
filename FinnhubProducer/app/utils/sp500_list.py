@@ -1,6 +1,5 @@
 import pandas as pd
-
-from utils.settings import SP500_COMPANIES_URL, US_BIG_TECH_URL
+from app.utils.settings import SP500_COMPANIES_URL, US_BIG_TECH_URL
 
 # Class for handling operations related to the S&P 500 list and US big tech companies
 class SP500_list:

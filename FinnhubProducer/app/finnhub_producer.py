@@ -1,10 +1,9 @@
 import numpy as np
 
-from gather_data.finnhub_gather_data import FinnhubGatherData
-from gather_data.finnhub_trades import FinnhubTrades
-from handlers.kafka_producer import KafkaProducer
-import utils.settings as UTILS
-
+from app.gather_data.finnhub_gather_data import FinnhubGatherData
+from app.gather_data.finnhub_trades import FinnhubTrades
+from app.handlers.kafka_producer import KafkaProducer
+from app.utils import settings as UTILS
 
 class FinnhubProducer:
     """

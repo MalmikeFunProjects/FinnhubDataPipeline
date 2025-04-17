@@ -6,8 +6,8 @@ from confluent_kafka.schema_registry import SchemaRegistryClient, SchemaRegistry
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-from utils.utilities import Utilities
-from utils.default_log_setting import DefaultLogger
+from app.utils.utilities import Utilities
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("kafka_producer", log_to_console=True)
 

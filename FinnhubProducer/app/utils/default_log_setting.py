@@ -1,7 +1,7 @@
 # Create a main application logger
-from utils.Logger import Logger
 import logging
 import sys
+from app.utils.Logger import Logger
 
 class DefaultLogger:
 

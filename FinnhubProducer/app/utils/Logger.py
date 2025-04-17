@@ -232,6 +232,10 @@ class Logger:
             self._format_with_context(f"Task '{task_name}' completed in {duration:.4f} seconds")
         )
 
+    def log(self, level, message, *args, **kwargs):
+        """Log a message with the specified level."""
+        self.logger.log(level, self._format_with_context(message), *args, **kwargs)
+
     # Context managers
     def context_manager(self, **context_data):
         """Context manager for adding temporary context data to logs."""
