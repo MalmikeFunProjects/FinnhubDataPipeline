@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:unit": "jest --testMatch '**/*.test.ts' --watchAll"
+    "test:unit": "jest --watchAll"
   },
   "dependencies": {
     "chart.js": "^4.4.8",
@@ -22,6 +22,7 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.5.14",
     "@types/luxon": "^3.4.2",
     "@types/node": "^20",
