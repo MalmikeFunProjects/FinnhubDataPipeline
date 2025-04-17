@@ -11,8 +11,8 @@ from cassandra.cqlengine.models import Model
 from cassandra.query import PreparedStatement
 from cassandra.cqlengine.query import AbstractQuerySet
 
-from utils.utilities import Utilities, TimeReturnType
-from utils.default_log_setting import DefaultLogger
+from app.utils.utilities import Utilities, TimeReturnType
+from app.utils.default_log_setting import DefaultLogger
 
 logger = DefaultLogger.get_err_logger("cassandra_client", log_to_console=True)
 
@@ -95,43 +95,15 @@ class CassandraClient:
         last_exception = None
         while attempts < self.config.retry_attempts:
             try:
-                logger.info(
-                    f"Connecting to Cassandra at {self.config.hosts}: {self.config.port}. "
-                    f"Attempt {attempts + 1}/{self.config.retry_attempts}..."
-                )
+                self._log_connection_attempt(attempts)
 
-                # Configure authenctication if credentials are provided
-                auth_provider = None
-                if self.config.username and self.config.password:
-                    auth_provider = PlainTextAuthProvider(
-                        username=self.config.username,
-                        password=self.config.password
-                    )
+                auth_provider = self._create_auth_provider()
+                self.cluster = self._create_cluster(auth_provider)
+                self.session = self._connect_to_cluster()
 
-                # Initialize cluster with optimized settings
-                self.cluster = Cluster(
-                    contact_points=self.config.hosts,
-                    port=self.config.port,
-                    auth_provider=auth_provider,
-                    load_balancing_policy=RoundRobinPolicy(),
-                    default_retry_policy=RetryPolicy(),
-                    reconnection_policy=ExponentialReconnectionPolicy(base_delay=1, max_delay=60),
-                    protocol_version=self.config.protocol_version,
-                    control_connection_timeout=self.config.control_connection_timeout,
-                    connect_timeout=self.config.connect_timeout
-                )
+                self._configure_keyspace()
+                self._register_connection()
 
-                # Connect and set keyspace if provided
-                self.session = self.cluster.connect()
-                if self.config.keyspace:
-                    self.session.set_keyspace(self.config.keyspace)
-
-                # Register connection for cqlengine
-                connection.register_connection(
-                    self.config.connection_name,
-                    session=self.session
-                )
-                connection.set_default_connection(self.config.connection_name)
                 self.connected = True
                 logger.info("Connected to Cassandra successfully")
                 return
@@ -139,26 +111,78 @@ class CassandraClient:
             except (NoHostAvailable, AuthenticationFailed) as e:
                 attempts += 1
                 last_exception = e
-                logger.error(f"Connection attempt {attempts} failed: {str(e)}")
+                self._handle_connection_error(attempts, e)
 
                 if attempts >= self.config.retry_attempts:
-                    logger.error(f"Failed to connect after {self.config.retry_attempts} attempts")
-                    break
+                    error_msg = f"Failed to connect to Cassandra after {self.config.retry_attempts} attempts"
+                    logger.error(error_msg)
+                    raise ConnectionError(f"Failed to connect to Cassandra: {str(e)}")
 
-                # Wait before retry with exponential backoff
-                wait_time = self.config.retry_delay * (2 ** (attempts - 1))
-                logger.info(f"Waiting {wait_time} seconds before next attempt")
-                time.sleep(wait_time)
-
+                self._wait_before_retry(attempts=attempts)
             except Exception as e:
                 logger.error(f"Unexpected error connecting to Cassandra: {str(e)}")
                 last_exception = e
-                break
+                raise
 
         # If we got here, all connection attempts failed
         error_msg = f"Failed to connect to Cassandra: {str(last_exception)}"
         logger.error(error_msg)
-        raise ConnectionError(error_msg)
+        raise ConnectionError("Failed to connect to Cassandra after all retry attempts.")
+
+    def _log_connection_attempt(self, attempts):
+        """Log the current connection attempt."""
+        logger.info(
+            f"Connecting to Cassandra at {self.config.hosts}: {self.config.port}. "
+            f"Attempt {attempts + 1}/{self.config.retry_attempts}..."
+        )
+
+    def _create_auth_provider(self):
+        """Create and return an auth provider if credentials are provided."""
+        if self.config.username and self.config.password:
+            return PlainTextAuthProvider(
+                username=self.config.username,
+                password=self.config.password
+            )
+        return None
+
+    def _create_cluster(self, auth_provider):
+        """Create and return a Cassandra cluster instance."""
+        return Cluster(
+            contact_points=self.config.hosts,
+            port=self.config.port,
+            auth_provider=auth_provider,
+            load_balancing_policy=RoundRobinPolicy(),
+            default_retry_policy=RetryPolicy(),
+            reconnection_policy=ExponentialReconnectionPolicy(base_delay=1, max_delay=60),
+            protocol_version=self.config.protocol_version,
+            control_connection_timeout=self.config.control_connection_timeout,
+            connect_timeout=self.config.connect_timeout
+        )
+
+
+    def _connect_to_cluster(self):
+        """Connect to the cluster and return the session."""
+        return self.cluster.connect()
+
+    def _configure_keyspace(self):
+        """Set the keyspace if specified in the configuration."""
+        if self.config.keyspace:
+            self.session.set_keyspace(self.config.keyspace)
+
+    def _register_connection(self):
+        """Register and set as default connection in the CQL engine."""
+        connection.register_connection(self.config.connection_name, session=self.session)
+        connection.set_default_connection(self.config.connection_name)
+
+    def _handle_connection_error(self, attempts, exception):
+        """Handle connection errors by logging the error."""
+        logger.error(f"Connection attempt {attempts} failed: {str(exception)}")
+
+    def _wait_before_retry(self, attempts=0):
+        """Wait for the configured delay before retrying."""
+        wait_time = self.config.retry_delay * (2 ** (attempts - 1))
+        logger.info(f"Waiting {wait_time} seconds before next attempt")
+        time.sleep(wait_time)
 
     def close_connection(self) -> None:
         """Close connection to Cassandra cluster"""
@@ -459,13 +483,14 @@ class CassandraClient:
 
             # Process each date partition until we have enough results
             while current_date <= end_date and remaining > 0:
+                current_filters = query_filters.copy()
                 # Set partition for current date
-                query_filters[partition_field] = current_date
+                current_filters[partition_field] = current_date
 
                 # Query this partition
                 partition_results = list(self.get_items_by_filter(
                     model_class=model_class,
-                    filter_dict=query_filters,
+                    filter_dict=current_filters,
                     order_by=order_by,
                     limit=remaining,
                     allow_filtering=allow_filtering
@@ -510,8 +535,7 @@ class CassandraClient:
             self.connect_to_cassandra()
 
         try:
-            from cassandra.query import BatchStatement
-            from cassandra.cqlengine import BatchQuery
+            from cassandra.cqlengine.query import BatchQuery
 
             # Use cqlengine BatchQuery for model operations
             with BatchQuery() as batch:
