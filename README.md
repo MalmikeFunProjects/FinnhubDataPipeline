@@ -144,3 +144,24 @@ This setup provides a foundation for building a more complex data pipeline. You 
 docker exec -it cassandra-node cqlsh
 ```
 
+## Running tests
+The python tests are written to run with pytest. They are set up to run in the conda environment.
+
+### Setting up conda environment
+Navigate to the respective environments e.g. FinnhubConsumer. Creat/ activate conda environment
+```
+conda env create -f environment.yml
+```
+Activate environment
+```
+conda activate finnhubDPL
+```
+
+### Running tests in python
+Run the following command to run the tests. You can run this in `FinnhubConsumer`, `FinnhubProducer`, `FinnhubAPI` and `KSQLHandler`
+```
+pytest .
+```
+
+NB: The project mainly has unit tests. End to end tests are yet to be added. Also setting up of a CI/CD pipeline.
+

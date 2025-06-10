@@ -21,7 +21,7 @@ const jestConfig = {
     "\\.(css|scss)$": "<rootDir>/__mocks__/styleMock.js",
     "^react-chartjs-2$": "<rootDir>/__mocks__/react-chartjs-2.js"
   },
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   // moduleDirectories: ['node_modules', '<rootDir>']
 };
 
