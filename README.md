@@ -59,13 +59,15 @@ The pipeline consists of the following components:
     - `-r <run_services>`: Starts specified services.
         - `all_services`: Start all services.
         - `required_services`: Start Kafka core and application services.
-        - `kafka_core`: Start Zookeeper, Broker, Schema Registry, and ksqlDB Server.
+        - `application_core`: Start Zookeeper, Broker, Schema Registry, ksqlDB Server and cassandra.
         - `kafka_monitoring`: Start Control Center, Kafka REST, and ksqlDB CLI.
         - `application_services`: Start ksql Handler, Finnhub Producer, and Finnhub Consumer.
+        - `ui_services`: Start web-ui and finnhub-api.
     - `-s <stop_services>`: Stops specified services.
         - `all_services`: Stop all services.
         - `kafka_monitoring`: Stop Control Center and Kafka REST.
         - `application_services`: Stop ksql Handler, Finnhub Producer, and Finnhub Consumer.
+        - `ui_services`: Stop web-ui and finnhub-api.
     - `-b`: Builds the Docker images before starting the containers. Use this when you've made changes to the Dockerfiles or application code.
     - `-v`: Enables verbose output.
     NB:
@@ -86,16 +88,16 @@ The pipeline consists of the following components:
 
     **Points to Note about Service Dependencies**
 
-    * **Application Service Dependencies:** The services grouped under `application_services` (ksql Handler, Finnhub Producer, and Finnhub Consumer) depend on the core Kafka services (`kafka_core` - Zookeeper, Broker, Schema Registry, ksqlDB Server).
+    * **Application Service Dependencies:** The services grouped under `application_services` (ksql Handler, Finnhub Producer, and Finnhub Consumer) depend on the core Kafka services (`application_core` - Zookeeper, Broker, Schema Registry, ksqlDB Server and cassandra).
 
-    * **Automatic Dependency Resolution:**  When you start `application_services`, *docker compose* automatically starts the necessary `kafka_core` services.  You do *not* need to start them separately. This is handled by the `depends_on` directives in the `docker-compose.yml` file.
+    * **Automatic Dependency Resolution:**  When you start `application_services`, *docker compose* automatically starts the necessary `application_core` services.  You do *not* need to start them separately. This is handled by the `depends_on` directives in the `docker-compose.yml` file.
 
     * **Rebuilding Specific Services:** The `-b` (build) flag only rebuilds the Docker images of the services specified with the `-r` flag.  This is important to remember when you've made code changes:
-        * `./run_docker_compose.sh -r application_services -b`: This command will rebuild *only* the `application_services` images and then start all required services (including the already-built `kafka_core` services).  The `kafka_core` services will *not* be rebuilt unless you specifically include them with the `-r` flag, e.g., `./run_docker_compose.sh -r all_services -b`.
-        * `./run_docker_compose.sh -r kafka_core -b`: This will rebuild only Kafka core images.
+        * `./run_docker_compose.sh -r application_services -b`: This command will rebuild *only* the `application_services` images and then start all required services (including the already-built `application_core` services).  The `application_core` services will *not* be rebuilt unless you specifically include them with the `-r` flag, e.g., `./run_docker_compose.sh -r all_services -b`.
+        * `./run_docker_compose.sh -r application_core -b`: This will rebuild only Kafka core images.
 
     * **Stopping Services:**  The `-s` (stop) flag behaves similarly.  It only stops the services specified.
-        * `./run_docker_compose.sh -s application_services`: This will stop only the `application_services`. The `kafka_core` services will continue to run unless you stop them explicitly.
+        * `./run_docker_compose.sh -s application_services`: This will stop only the `application_services`. The `application_core` services will continue to run unless you stop them explicitly.
         * `./run_docker_compose.sh -s all_services`: This will stop all the services.
 
 2. **(Optional) Verify which services are running:**
@@ -164,4 +166,9 @@ pytest .
 ```
 
 NB: The project mainly has unit tests. End to end tests are yet to be added. Also setting up of a CI/CD pipeline.
+
+
+## Issues
+Cassandra might not start up when docker compose is initially run. In my case, this is due to limited resources on my machine as a lot is taken up when provisioning the other docker containers. I had to rerun the `docker compose up -d cassandra cassandra-init`. After which there is a necessity to run restart finnhub-consumer since it fails when there is no cassandra istance running. `docker compose up -d finnhub-consumer`.
+<br/><b>NOTE</b>: These issues can be fixed in later iterations of the application.
 
