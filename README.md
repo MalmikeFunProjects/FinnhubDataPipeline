@@ -137,8 +137,9 @@ This setup provides a foundation for building a more complex data pipeline. You 
 - Implementing more sophisticated data transformations with ksqlDB.
 - Integrating with other data processing and visualization tools.
 
-## Usage video
-![Usage Video](assets/videos/usage-video.mov)
+## UI dashboard
+![Usage Video](assets/videos/usage-video.gif)
+
 
 
 ## Accessing Cassandra
@@ -169,6 +170,8 @@ NB: The project mainly has unit tests. End to end tests are yet to be added. Als
 
 
 ## Issues
-Cassandra might not start up when docker compose is initially run. In my case, this is due to limited resources on my machine as a lot is taken up when provisioning the other docker containers. I had to rerun the `docker compose up -d cassandra cassandra-init`. After which there is a necessity to run restart finnhub-consumer since it fails when there is no cassandra istance running. `docker compose up -d finnhub-consumer`.
+- The UI application takes sometime to start up, which implies early access is meant with an nginx error.
+- Cassandra might not start up when docker compose is initially run. In my case, this is due to limited resources on my machine as a lot is taken up when provisioning the other docker containers. I had to rerun the `docker compose up -d cassandra cassandra-init`. After which there is a necessity to run restart finnhub-consumer since it fails when there is no cassandra istance running. `docker compose up -d finnhub-consumer`.
+
 <br/><b>NOTE</b>: These issues can be fixed in later iterations of the application.
 
