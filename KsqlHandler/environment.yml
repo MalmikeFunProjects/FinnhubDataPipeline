@@ -9,7 +9,7 @@ channels:
 
 dependencies:
   # List of Python packages required for the project, specifying the exact versions to be installed:
-
+  - python=3.12
   - python-dotenv=1.0.1  # Library for loading environment variables from a .env file
   - python-confluent-kafka=2.8.0  # Client for Kafka in Python, specifically version 2.8.0
   - httpx=0.28.1  # HTTP client for Python, version 0.28.1, supporting async requests

@@ -102,6 +102,7 @@ services:
   kafka-rest:
     image: confluentinc/cp-kafka-rest:latest  # Uses the Confluent Kafka REST Proxy image
     hostname: kafka-rest  # Hostname for Kafka REST Proxy
+    container_name: kafka-rest
     restart: always  # Ensures Kafka REST Proxy restarts if it fails
     ports:
       - "8082:8082"  # Exposes the REST API port
@@ -154,6 +155,39 @@ services:
     depends_on:
       - ksqldb-server  # ksqlDB CLI depends on ksqlDB server
 
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra-node
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=MyCluster
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+      - ./Cassandra/init-scripts:/init-scripts
+    networks:
+      - finnhub-network  # Connects to the finnhub-network
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  cassandra-init:
+    image: cassandra:latest
+    container_name: cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./Cassandra/init-scripts:/init-scripts
+    networks:
+      - finnhub-network
+    command: sh /init-scripts/init.sh
+    restart: "no"
+
   # Custom handler service to interact with ksqlDB (user-defined)
   ksql-handler:
     build:
@@ -177,6 +211,8 @@ services:
         delay: 5s
         max_attempts: 3
         window: 60s
+    volumes:
+      - ./KsqlHandler/app:/app
     environment:
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Connects to Kafka broker
     depends_on:
@@ -196,6 +232,8 @@ services:
     hostname: finnhub-producer  # Hostname for Finnhub producer
     ports:
       - "5004:5004"  # Exposes port for communication
+    volumes:
+      - ./FinnhubProducer/app:/app
     networks:
       - finnhub-network  # Connects to the finnhub-network
     deploy:
@@ -220,6 +258,8 @@ services:
     hostname: finnhub-consumer  # Hostname for Finnhub consumer
     ports:
       - "5005:5005"  # Exposes port for communication
+    volumes:
+      - ./FinnhubConsumer/app:/app
     networks:
       - finnhub-network  # Connects to the finnhub-network
     deploy:
@@ -231,10 +271,72 @@ services:
     environment:
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"  # Kafka broker address
     depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
       ksql-handler:
         condition: service_healthy  # Waits for ksql handler to be healthy
+      cassandra:
+        condition: service_healthy  # Waits for Cassandra to be healthy
+
+  finnhub-api:
+    build:
+      context: ./FinnhubAPI
+      dockerfile: Dockerfile
+    container_name: finnhub-api
+    hostname: finnhub-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./FinnhubAPI/app:/app
+    networks:
+      - finnhub-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 60s
+    depends_on:
+      cassandra-init:
+        condition: service_completed_successfully
+      cassandra:
+        condition: service_healthy
+
+  web-ui:
+    build:
+      context: ./FinnhubReactApp
+      dockerfile: Dockerfile
+    container_name: web-ui
+    hostname: web-ui
+    networks:
+      - finnhub-network
+    ports:
+      - "3000"
+    environment:
+      - NODE_ENV=development # set to production when deploying
+    volumes:
+      - ./FinnhubReactApp:/app
+    command: npm run dev # set to npm run start when deploying
+    depends_on:
+      - finnhub-api
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    hostname: nginx
+    networks:
+      - finnhub-network
+    ports:
+      - "80:80"
+    depends_on:
+      - web-ui
+    volumes:
+      - ./FinnhubReactApp/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./FinnhubReactApp/public:/usr/share/nginx/html/public:ro
+
 
 # Declare volumes for persisting data
 volumes:
   zookeeper_data:  # Volume for storing Zookeeper data
   zookeeper_log:  # Volume for storing Zookeeper logs
+  cassandra-data:

@@ -7,10 +7,11 @@ eval "$(conda shell.bash hook)"
 # Activate the Conda environment "finnhubDPL" that has been set up in the Dockerfile
 # This makes sure the environment is activated before running the Python script
 conda activate finnhubDPL
+cp app/sample.env app/.env
 
 # Run the Python script "finnhub_consumer.py" inside the activated Conda environment
 # Capture the exit code of the Python script to determine if it ran successfully or failed
-python -u finnhub_consumer.py
+python -u -m app.finnhub_consumer
 EXIT_CODE=$?
 
 # Check the exit code of the Python script

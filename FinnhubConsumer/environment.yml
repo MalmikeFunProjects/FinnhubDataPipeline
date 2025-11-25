@@ -8,6 +8,7 @@ channels:
 
 # List of dependencies that will be installed in the environment
 dependencies:
+  - python=3.12
   - python-confluent-kafka=2.8.0  # Confluent Kafka Python client, version 2.8.0 for interacting with Kafka
   - httpx=0.28.1                  # HTTP client library for Python, provides async support, used for making HTTP requests
   - fastavro=1.10.0               # Fastavro is a fast AVRO (Apache Avro) library for reading and writing Avro files
@@ -15,3 +16,14 @@ dependencies:
   - requests=2.32.3               # The `requests` library, a simple HTTP library for making network requests
   - attrs=25.1.0                  # A library for creating classes without boilerplate code; helpful for defining attributes easily
   - cachetools=5.5.1              # A library providing extensible cache implementations for Python, useful for caching and improving performance
+  - pip
+  - pip:
+      - cassandra-driver==3.29.2
+
+development:
+  - pytest=8.3.5                  # A testing framework for Python, used for writing and running tests
+  - pytest-asyncio=0.26.0         # A plugin for pytest that provides support for testing asyncio code
+  - pytest-cov=4.1.0              # A plugin for pytest that provides coverage reporting
+  - pre-commit=3.2.0              # A framework for managing and maintaining multi-language pre-commit hooks
+  - black=23.9.1                  # A code formatter for Python, enforcing a consistent coding style
+  - isort=5.12.0                  # A Python utility for sorting imports in a consistent way

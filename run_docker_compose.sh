@@ -7,9 +7,10 @@ if [ $# -eq 0 ]; then
 fi
 
 # Define service groups
-kafka_core=("zookeeper" "broker" "schema-registry" "ksqldb-server")
+application_core=("zookeeper" "broker" "schema-registry" "ksqldb-server" "cassandra")
 kafka_monitoring=("control-center" "kafka-rest" "ksqldb-cli")
 application_services=("ksql-handler" "finnhub-producer" "finnhub-consumer")
+ui_services=("finnhub-api" "nginx" "web-ui")
 
 while getopts ":s:br:hv" opt; do
     case $opt in
@@ -23,13 +24,15 @@ while getopts ":s:br:hv" opt; do
         echo "Options for -r (run_services):"
         echo "  all_services:             Run all defined services."
         echo "  required_services:        Run only required services for the pipeline."
-        echo "  kafka_core:               Run core Kafka services."
+        echo "  application_core:               Run core Kafka services."
         echo "  kafka_monitoring:         Run Kafka monitoring services."
         echo "  application_services:     Run only application micro services."
+        echo "  ui_services:              Run only UI services."
         echo "Options for -s (stop_services):"
         echo "  all_services:             Stop all defined services."
         echo "  kafka_monitoring:         Stop Kafka monitoring services."
         echo "  application_services:     Stop application micro services."
+        echo "  ui_services:              Stop UI services."
         exit 0
         ;;
     v) verbose=true ;;
@@ -62,9 +65,9 @@ run_services() {
         ;;
     required_services)
         echo "Starting required services (Kafka core + application services)..."
-        docker compose up $build -d "${kafka_core_services[@]}" "${application_services[@]}"
+        docker compose up $build -d "${application_core_services[@]}" "${application_services[@]}"
         ;;
-    kafka_core | kafka_monitoring | application_services)
+    application_core | kafka_monitoring | application_services)
         eval "services=(\"\${${1}[@]}\")"
         echo "Starting $1..."
         docker compose up $build -d "${services[@]}"
@@ -83,7 +86,7 @@ stop_services() {
         echo "Stopping all services..."
         docker compose down
         ;;
-    kafka_monitoring | application_services)
+    kafka_monitoring | application_services | ui_services)
         eval "services=(\"\${${1}[@]}\")"
         echo "Starting $1..."
         docker compose stop "${services[@]}"

@@ -1,0 +1,25 @@
+# Define the name of the Conda environment
+name: finnhubDPL  # This is the environment's name and will be used to activate it
+
+# Define the channels where Conda will search for packages
+channels:
+  - defaults        # The default Conda channel, containing many popular and common packages
+  - conda-forge     # A community-maintained channel that offers a wide variety of packages, often updated more frequently than defaults
+
+# List of dependencies that will be installed in the environment
+dependencies:
+  - python=3.12
+  - python-dotenv=1.0.1           # Python library for reading key-value pairs from a `.env` file and setting them as environment variables
+  - pip
+  - fastapi=0.115.11
+  - uvicorn=0.34.0
+  - pip:
+      - cassandra-driver==3.29.2
+
+development:
+  - pytest=8.3.5                  # A testing framework for Python, used for writing and running tests
+  - pytest-asyncio=0.26.0         # A plugin for pytest that provides support for testing asyncio code
+  - pytest-cov=4.1.0              # A plugin for pytest that provides coverage reporting
+  - pre-commit=3.2.0              # A framework for managing and maintaining multi-language pre-commit hooks
+  - black=23.9.1                  # A code formatter for Python, enforcing a consistent coding style
+  - isort=5.12.0                  # A Python utility for sorting imports in a consistent way

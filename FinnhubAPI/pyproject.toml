@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "finnhub-api"
+version = "0.1.0"
+description = "Fast API Project"
+authors = ["Male Michael <malmike21@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12.0"
+fastapi = "0.115.11"
+uvicorn = {extras = ["standard"], version = "0.34.0"}
+cassandra-driver = "3.29.2"
+python-dotenv = "1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+coverage = "7.2.7"
+pylint = "2.17.4"
+pytest = "7.4.0"
+pylint-runner = "0.6.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
